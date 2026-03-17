@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "660090449225",
+    "project_id": "shopkeeper-9f594",
+    "storage_bucket": "shopkeeper-9f594.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:660090449225:android:5e71f041559bf619fefe98",
+        "android_client_info": {
+          "package_name": "com.example.shopkeeper.shop_keeper_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5zwfYC7gNZDCUdyJ11qHWEgeYEgU-Ge8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
