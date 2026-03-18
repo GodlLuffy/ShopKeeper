@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
@@ -20,7 +21,18 @@ class ProductDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
-                    const Icon(Icons.inventory_2, size: 60, color: AppTheme.primaryColor),
+                    product.imageUrl != null && product.imageUrl!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.file(
+                              File(product.imageUrl!),
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 60, color: AppTheme.primaryColor),
+                            ),
+                          )
+                        : const Icon(Icons.inventory_2, size: 60, color: AppTheme.primaryColor),
                     const SizedBox(height: 16),
                     Text(product.name, style: Theme.of(context).textTheme.headlineMedium),
                     Text(product.category, style: const TextStyle(color: Colors.grey)),

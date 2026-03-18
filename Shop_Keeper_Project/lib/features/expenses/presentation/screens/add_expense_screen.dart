@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/data/models/expense_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -62,7 +63,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   amount: double.tryParse(_amountController.text) ?? 0.0,
                   category: _category,
                   date: _selectedDate,
-                  userId: 'dummy_user',
+                  userId: (context.read<AuthCubit>().state is Authenticated) 
+                      ? (context.read<AuthCubit>().state as Authenticated).user.uid 
+                      : (context.read<AuthCubit>().state is PinRequired)
+                          ? (context.read<AuthCubit>().state as PinRequired).user.uid
+                          : 'unknown',
                 );
                 context.read<ExpensesCubit>().addExpense(expense);
                 Navigator.pop(context);

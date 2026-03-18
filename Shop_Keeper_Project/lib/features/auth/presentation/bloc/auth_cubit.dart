@@ -1,21 +1,59 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shop_keeper_project/features/auth/domain/entities/user_entity.dart';
 import 'package:shop_keeper_project/features/auth/domain/repositories/auth_repository.dart';
+import 'package:shop_keeper_project/services/security_service.dart';
 
 part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
+  final SecurityService securityService;
 
-  AuthCubit({required this.authRepository}) : super(AuthInitial());
+  AuthCubit({
+    required this.authRepository,
+    required this.securityService,
+  }) : super(AuthInitial());
 
   Future<void> checkAuth() async {
-    final userOption = await authRepository.getCurrentUser();
-    userOption.fold(
-      () => emit(Unauthenticated()),
-      (user) => emit(Authenticated(user)),
-    );
+    try {
+      final userOption = await authRepository.getCurrentUser().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Auth check timed out');
+        },
+      );
+      userOption.fold(
+        () => emit(Unauthenticated()),
+        (user) => _handleSuccessfulAuth(user),
+      );
+    } catch (e) {
+      // If auth check hangs or fails, fall back to unauthenticated to let the user see the login screen
+      emit(Unauthenticated());
+    }
+  }
+
+  Future<void> _handleSuccessfulAuth(UserEntity user) async {
+    try {
+      final pinEnabled = await securityService.isPinEnabled(user.uid).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => false,
+      );
+      if (pinEnabled) {
+        final bioSuccess = await securityService.authenticateWithBiometrics();
+        if (bioSuccess) {
+          emit(Authenticated(user));
+        } else {
+          emit(PinRequired(user));
+        }
+      } else {
+        emit(Authenticated(user));
+      }
+    } catch (e) {
+      // Emergency fallback to authenticated if PIN service hangs
+      emit(Authenticated(user));
+    }
   }
 
   Future<void> loginWithEmail(String email, String password) async {
@@ -23,7 +61,7 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await authRepository.loginWithEmail(email, password);
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => _handleSuccessfulAuth(user),
     );
   }
 
@@ -55,7 +93,7 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await authRepository.verifyOtp(verificationId, smsCode);
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => _handleSuccessfulAuth(user),
     );
   }
 
@@ -64,7 +102,7 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await authRepository.register(name, email, password, shopName);
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => _handleSuccessfulAuth(user),
     );
   }
 

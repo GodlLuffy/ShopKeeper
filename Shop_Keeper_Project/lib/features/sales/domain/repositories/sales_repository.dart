@@ -4,6 +4,7 @@ import 'package:shop_keeper_project/features/sales/domain/entities/sale_entity.d
 
 abstract class SalesRepository {
   Future<Either<Failure, List<SaleEntity>>> getSalesByDate(DateTime date);
+  Future<Either<Failure, List<SaleEntity>>> getSalesByRange(DateTime start, DateTime end);
   Future<Either<Failure, SaleEntity>> addSale(SaleEntity sale);
   Future<Either<Failure, double>> getTodaySalesSummary();
 }

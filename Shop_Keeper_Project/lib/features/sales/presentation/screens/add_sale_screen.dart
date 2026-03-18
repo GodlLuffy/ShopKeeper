@@ -6,6 +6,8 @@ import 'package:shop_keeper_project/features/inventory/domain/entities/product_e
 import 'package:shop_keeper_project/features/sales/data/models/sale_model.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 
 class AddSaleScreen extends StatefulWidget {
   const AddSaleScreen({super.key});
@@ -28,6 +30,39 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     }
   }
 
+  void _showBarcodeScanner(List<ProductEntity> products) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SizedBox(
+        height: 400,
+        child: MobileScanner(
+          onDetect: (capture) {
+            final List<Barcode> barcodes = capture.barcodes;
+            if (barcodes.isNotEmpty) {
+              final code = barcodes.first.rawValue;
+              final product = products.firstWhere(
+                (p) => p.barcode == code,
+                orElse: () => products.firstWhere((p) => false, orElse: () => _selectedProduct ?? products.first), // Fallback or handle not found
+              );
+              
+              if (product.barcode == code) {
+                setState(() {
+                  _selectedProduct = product;
+                  _calculateTotal();
+                });
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Product not found for this barcode')),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,18 +82,29 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
               children: [
                 Text('Select Product', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<ProductEntity>(
-                  isExpanded: true,
-                  hint: const Text('Search or select product'),
-                  value: _selectedProduct,
-                  items: products.map((p) => DropdownMenuItem(
-                    value: p,
-                    child: Text('${p.name} (Stock: ${p.stockQuantity})'),
-                  )).toList(),
-                  onChanged: (val) {
-                    setState(() => _selectedProduct = val);
-                    _calculateTotal();
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<ProductEntity>(
+                        isExpanded: true,
+                        hint: const Text('Search or select product'),
+                        value: _selectedProduct,
+                        items: products.map((p) => DropdownMenuItem(
+                          value: p,
+                          child: Text('${p.name} (Stock: ${p.stockQuantity})'),
+                        )).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedProduct = val);
+                          _calculateTotal();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: () => _showBarcodeScanner(products),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 
@@ -119,7 +165,11 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                         totalAmount: _total,
                         totalProfit: profit,
                         date: DateTime.now(),
-                        userId: _selectedProduct!.userId,
+                        userId: (context.read<AuthCubit>().state is Authenticated) 
+                            ? (context.read<AuthCubit>().state as Authenticated).user.uid 
+                            : (context.read<AuthCubit>().state is PinRequired)
+                                ? (context.read<AuthCubit>().state as PinRequired).user.uid
+                                : 'unknown',
                       );
                       
                       context.read<SalesCubit>().addSale(sale);

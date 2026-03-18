@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 
-import 'package:shop_keeper_project/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:shop_keeper_project/features/auth/presentation/screens/otp_screen.dart';
-import 'package:shop_keeper_project/features/auth/presentation/screens/register_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,21 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
           if (state is Authenticated) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
+            context.go('/dashboard');
           }
           if (state is OtpSent) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => OtpScreen(
-                  verificationId: state.verificationId,
-                  phoneNumber: _phoneController.text,
-                ),
-              ),
-            );
+            context.push('/login/otp', extra: {
+              'verificationId': state.verificationId,
+              'phoneNumber': _phoneController.text,
+            });
           }
         },
         builder: (context, state) {
@@ -132,10 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                      ),
+                      onPressed: () => context.push('/register'),
                       child: const Text('New Shop? Create Account'),
                     ),
                   ]

@@ -9,11 +9,23 @@ import 'package:shop_keeper_project/features/inventory/presentation/bloc/invento
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
 import 'package:shop_keeper_project/features/ai_assistant/presentation/bloc/ai_assistant_cubit.dart';
-import 'package:shop_keeper_project/features/auth/presentation/screens/pin_lock_screen.dart';
+import 'package:shop_keeper_project/core/routing/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Global Flutter Error Catcher
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('GLOBAL FLUTTER ERROR: ${details.exception}');
+  };
+
+  // Asynchronous Error Catcher
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('GLOBAL ASYNC ERROR: $error');
+    return true;
+  };
+
   // Custom Error Widget to prevent black screen on build errors
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Scaffold(
@@ -43,40 +55,59 @@ void main() async {
   }
 
   try {
-    await di.init(isDemoMode: !firebaseInitialized);
-  } catch (e) {
-    debugPrint('Dependency injection failed: $e');
-    // Fallback error screen if injection fails completely
-    runApp(MaterialApp(
-      home: Scaffold(
-        body: Center(child: Text('Critical Initialization Error:\n$e')),
-      ),
-    ));
-    return;
+      debugPrint('STARTING APP INITIALIZATION...');
+      await di.init(isDemoMode: !firebaseInitialized);
+      
+      debugPrint('CHECKING AUTH STATUS...');
+      // Pre-check auth before UI starts to avoid splash hang
+      await di.sl<AuthCubit>().checkAuth();
+      
+      debugPrint('INITIALIZATION COMPLETE ✅');
+    } catch (e) {
+      debugPrint('CRITICAL INITIALIZATION FAILURE: $e');
+      // Fallback error screen if injection fails completely
+      runApp(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text('Critical Initialization Error:\n$e\n\nPlease check your internet connection and restart.'),
+            ),
+          ),
+        ),
+      ));
+      return;
+    }
+
+    runApp(const MyApp());
   }
 
-  runApp(const MyApp());
-}
+  class MyApp extends StatelessWidget {
+    const MyApp({super.key});
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => di.sl<AuthCubit>()),
-        BlocProvider(create: (_) => di.sl<InventoryCubit>()),
-        BlocProvider(create: (_) => di.sl<SalesCubit>()),
-        BlocProvider(create: (_) => di.sl<ExpensesCubit>()),
-        BlocProvider(create: (_) => di.sl<AIAssistantCubit>()),
-      ],
-      child: MaterialApp(
+    @override
+    Widget build(BuildContext context) {
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => di.sl<AuthCubit>()), // No ..checkAuth here, already done in main
+          BlocProvider(create: (_) => di.sl<InventoryCubit>()),
+          BlocProvider(create: (_) => di.sl<SalesCubit>()),
+          BlocProvider(create: (_) => di.sl<ExpensesCubit>()),
+          BlocProvider(create: (_) => di.sl<AIAssistantCubit>()),
+        ],
+      child: MaterialApp.router(
         title: 'ShopKeeper',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const PinLockScreen(),
+        routerConfig: di.sl<AppRouter>().router,
       ),
     );
   }
+}
+
+// Minimal placeholders if they don't exist yet to avoid breakages
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: CircularProgressIndicator()));
 }

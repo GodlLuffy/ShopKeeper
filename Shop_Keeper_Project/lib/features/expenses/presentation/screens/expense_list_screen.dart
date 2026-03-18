@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/data/models/expense_model.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
@@ -97,7 +98,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 amount: double.tryParse(amountController.text) ?? 0.0,
                 category: category,
                 date: DateTime.now(),
-                userId: 'dummy_user',
+                userId: (context.read<AuthCubit>().state is Authenticated) 
+                    ? (context.read<AuthCubit>().state as Authenticated).user.uid 
+                    : (context.read<AuthCubit>().state is PinRequired)
+                        ? (context.read<AuthCubit>().state as PinRequired).user.uid
+                        : 'unknown',
               );
               context.read<ExpensesCubit>().addExpense(expense);
               Navigator.pop(dialogContext);

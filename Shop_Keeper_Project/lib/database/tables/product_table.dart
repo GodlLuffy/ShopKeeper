@@ -37,6 +37,9 @@ class ProductTable extends HiveObject {
   @HiveField(10)
   final String? imageUrl;
 
+  @HiveField(11)
+  final String? barcode;
+
   ProductTable({
     required this.id,
     required this.name,
@@ -49,6 +52,7 @@ class ProductTable extends HiveObject {
     required this.createdAt,
     this.isSynced = false,
     this.imageUrl,
+    this.barcode,
   });
 
   Map<String, dynamic> toMap() {
@@ -63,6 +67,7 @@ class ProductTable extends HiveObject {
       'userId': userId,
       'createdAt': createdAt.toIso8601String(),
       'imageUrl': imageUrl,
+      'barcode': barcode,
     };
   }
 }

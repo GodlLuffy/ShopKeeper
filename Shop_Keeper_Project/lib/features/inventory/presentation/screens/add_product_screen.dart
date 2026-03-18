@@ -1,11 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
-import 'package:shop_keeper_project/features/inventory/data/models/product_model.dart';
-import 'package:shop_keeper_project/services/storage_service.dart';
-import 'package:uuid/uuid.dart';
+import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:shop_keeper_project/services/local_image_service.dart';
+import 'package:shop_keeper_project/injection_container.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:shop_keeper_project/core/widgets/custom_text_field.dart';
+import 'package:shop_keeper_project/core/widgets/primary_button.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -20,125 +26,233 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _sellPriceController = TextEditingController();
   final _stockController = TextEditingController();
   final _minStockController = TextEditingController();
+  final _barcodeController = TextEditingController();
   String _category = 'General Store';
   File? _imageFile;
-  bool _isUploading = false;
 
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-    );
-    if (pickedFile != null) {
-      setState(() => _imageFile = File(pickedFile.path));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Add New Product')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+  void _showImagePicker() {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(16),
-                  image: _imageFile != null
-                      ? DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover)
-                      : null,
-                ),
-                child: _imageFile == null
-                    ? const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text('Add Product Photo', style: TextStyle(color: Colors.grey)),
-                        ],
-                      )
-                    : null,
-              ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
+              title: const Text("Take Photo"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndCropImage(true);
+              },
             ),
-            const SizedBox(height: 24),
-            TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Product Name')),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _category,
-              items: ['General Store', 'Sweets/Bakery', 'Biscuits/Snacks', 'Other']
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (val) => setState(() => _category = val!),
-              decoration: const InputDecoration(labelText: 'Category'),
+            ListTile(
+              leading: const Icon(Icons.image, color: AppTheme.primaryColor),
+              title: const Text("Choose from Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndCropImage(false);
+              },
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _buyPriceController, decoration: const InputDecoration(labelText: 'Buy Price'), keyboardType: TextInputType.number)),
-                const SizedBox(width: 16),
-                Expanded(child: TextField(controller: _sellPriceController, decoration: const InputDecoration(labelText: 'Sell Price'), keyboardType: TextInputType.number)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _stockController, decoration: const InputDecoration(labelText: 'Initial Stock'), keyboardType: TextInputType.number)),
-                const SizedBox(width: 16),
-                Expanded(child: TextField(controller: _minStockController, decoration: const InputDecoration(labelText: 'Min Stock Alert'), keyboardType: TextInputType.number)),
-              ],
-            ),
-            const SizedBox(height: 48),
-            _isUploading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: () async {
-                      setState(() => _isUploading = true);
-                      try {
-                        String? imageUrl;
-                        final productId = const Uuid().v4();
-
-                        if (_imageFile != null) {
-                          imageUrl = await StorageService().uploadProductImage(_imageFile!, productId);
-                        }
-
-                        final product = ProductModel(
-                          id: productId,
-                          name: _nameController.text,
-                          category: _category,
-                          buyPrice: double.tryParse(_buyPriceController.text) ?? 0.0,
-                          sellPrice: double.tryParse(_sellPriceController.text) ?? 0.0,
-                          stockQuantity: int.tryParse(_stockController.text) ?? 0,
-                          minStockAlert: int.tryParse(_minStockController.text) ?? 0,
-                          userId: 'dummy_user', // Will be replaced by actual user ID
-                          createdAt: DateTime.now(),
-                          imageUrl: imageUrl,
-                        );
-                        
-                        if (!context.mounted) return;
-                        context.read<InventoryCubit>().addProduct(product);
-                        Navigator.pop(context);
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isUploading = false);
-                        }
-                      }
-                    },
-                    child: const Text('Save Product'),
-                  ),
           ],
         ),
       ),
     );
   }
+
+  void _pickAndCropImage(bool fromCamera) async {
+    final service = sl<LocalImageService>();
+    final cropped = await service.pickAndCropImage(fromCamera);
+    if (cropped != null) {
+      if (mounted) setState(() => _imageFile = cropped);
+    }
+  }
+
+  void _showBarcodeScanner() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SizedBox(
+        height: 400,
+        child: MobileScanner(
+          onDetect: (capture) {
+            final List<Barcode> barcodes = capture.barcodes;
+            if (barcodes.isNotEmpty) {
+              setState(() => _barcodeController.text = barcodes.first.rawValue ?? '');
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _saveProduct() {
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product name is required')));
+      return;
+    }
+
+    final authState = context.read<AuthCubit>().state;
+    String userId = 'unknown';
+    if (authState is Authenticated) {
+      userId = authState.user.uid;
+    } else if (authState is PinRequired) {
+      userId = authState.user.uid;
+    }
+
+    final product = ProductEntity(
+      id: '', // Generated by Repository
+      name: _nameController.text,
+      category: _category,
+      buyPrice: double.tryParse(_buyPriceController.text) ?? 0.0,
+      sellPrice: double.tryParse(_sellPriceController.text) ?? 0.0,
+      stockQuantity: int.tryParse(_stockController.text) ?? 0,
+      minStockAlert: int.tryParse(_minStockController.text) ?? 0,
+      userId: userId,
+      createdAt: DateTime.now(),
+      imageUrl: null, 
+      barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
+    );
+    
+    context.read<InventoryCubit>().addProduct(
+      product, 
+      imageFile: _imageFile,
+      barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: Text('Add Product', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: BlocConsumer<InventoryCubit, InventoryState>(
+        listener: (context, state) {
+          if (state is InventoryLoaded) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Product Saved Successfully!")));
+            Navigator.pop(context);
+          } else if (state is InventoryError) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is InventoryLoading;
+          
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: isLoading ? null : _showImagePicker,
+                  child: Container(
+                    height: 160,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                    ),
+                    child: _imageFile == null
+                        ? const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
+                              SizedBox(height: 12),
+                              Text("Add Product Photo", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+                            ],
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.file(_imageFile!, fit: BoxFit.cover),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Content Card adhering to Golden Layout Rule
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Details", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                      const SizedBox(height: 16),
+                      
+                      CustomTextField(label: "Product Name", controller: _nameController),
+                      const SizedBox(height: 16),
+                      
+                      Text("Category", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B))),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _category,
+                        items: ['General Store', 'Sweets/Bakery', 'Biscuits/Snacks', 'Other']
+                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                            .toList(),
+                        onChanged: (val) => setState(() => _category = val!),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      Row(
+                        children: [
+                          Expanded(child: CustomTextField(label: "Buy Price", controller: _buyPriceController, keyboardType: TextInputType.number)),
+                          const SizedBox(width: 16),
+                          Expanded(child: CustomTextField(label: "Sell Price", controller: _sellPriceController, keyboardType: TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      Row(
+                        children: [
+                          Expanded(child: CustomTextField(label: "Stock Qty", controller: _stockController, keyboardType: TextInputType.number)),
+                          const SizedBox(width: 16),
+                          Expanded(child: CustomTextField(label: "Min Alert", controller: _minStockController, keyboardType: TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      CustomTextField(
+                        label: "Barcode ID",
+                        controller: _barcodeController,
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.qr_code_scanner, color: AppTheme.primaryColor),
+                          onPressed: _showBarcodeScanner,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Reusable Premium Component
+                PrimaryButton(
+                  text: "SAVE PRODUCT",
+                  isLoading: isLoading,
+                  onPressed: _saveProduct,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
+
+
