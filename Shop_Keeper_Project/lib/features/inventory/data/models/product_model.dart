@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
 import 'package:shop_keeper_project/database/tables/product_table.dart';
 
@@ -13,6 +14,7 @@ class ProductModel extends ProductEntity {
     required super.userId,
     required super.createdAt,
     super.imageUrl,
+    super.barcode,
   });
 
   factory ProductModel.fromTable(ProductTable table) {
@@ -27,6 +29,7 @@ class ProductModel extends ProductEntity {
       userId: table.userId,
       createdAt: table.createdAt,
       imageUrl: table.imageUrl,
+      barcode: table.barcode,
     );
   }
 
@@ -43,6 +46,7 @@ class ProductModel extends ProductEntity {
       createdAt: createdAt,
       isSynced: isSynced,
       imageUrl: imageUrl,
+      barcode: barcode,
     );
   }
 
@@ -58,6 +62,7 @@ class ProductModel extends ProductEntity {
       userId: map['userId'] ?? '',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       imageUrl: map['imageUrl'],
+      barcode: map['barcode'],
     );
   }
 
@@ -72,13 +77,7 @@ class ProductModel extends ProductEntity {
       'userId': userId,
       'createdAt': createdAt,
       'imageUrl': imageUrl,
+      'barcode': barcode,
     };
   }
-}
-
-// Add Firestore Timestamp helper
-class Timestamp {
-  final DateTime date;
-  Timestamp(this.date);
-  DateTime toDate() => date;
 }

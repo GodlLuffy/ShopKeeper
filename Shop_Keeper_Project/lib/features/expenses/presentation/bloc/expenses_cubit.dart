@@ -1,18 +1,26 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shop_keeper_project/features/expenses/domain/entities/expense_entity.dart';
-import 'package:shop_keeper_project/features/expenses/domain/repositories/expenses_repository.dart';
+import 'package:shop_keeper_project/features/expenses/domain/usecases/get_expenses_by_date.dart';
+import 'package:shop_keeper_project/features/expenses/domain/usecases/add_expense.dart';
+import 'package:shop_keeper_project/features/expenses/domain/usecases/get_today_expenses_summary.dart';
 
 part 'expenses_state.dart';
 
 class ExpensesCubit extends Cubit<ExpensesState> {
-  final ExpensesRepository repository;
+  final GetExpensesByDate getExpensesByDate;
+  final AddExpense addExpenseUseCase;
+  final GetTodayExpensesSummary getSummary;
 
-  ExpensesCubit({required this.repository}) : super(ExpensesInitial());
+  ExpensesCubit({
+    required this.getExpensesByDate,
+    required this.addExpenseUseCase,
+    required this.getSummary,
+  }) : super(ExpensesInitial());
 
   Future<void> loadTodayExpenses() async {
     emit(ExpensesLoading());
-    final result = await repository.getExpensesByDate(DateTime.now());
+    final result = await getExpensesByDate(DateTime.now());
     result.fold(
       (failure) => emit(ExpensesError(failure.message)),
       (expenses) => emit(ExpensesLoaded(expenses)),
@@ -21,7 +29,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
 
   Future<void> addExpense(ExpenseEntity expense) async {
     emit(ExpensesLoading());
-    final result = await repository.addExpense(expense);
+    final result = await addExpenseUseCase(expense);
     result.fold(
       (failure) => emit(ExpensesError(failure.message)),
       (_) => loadTodayExpenses(),

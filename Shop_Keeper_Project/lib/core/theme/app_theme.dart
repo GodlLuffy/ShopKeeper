@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Premium Shopkeeper Palettes
-  static const Color primaryColor = Color(0xFF6366F1); // Indigo
-  static const Color successColor = Color(0xFF10B981); // Emerald
-  static const Color secondaryColor = successColor;
+  // Premium Shopkeeper Palettes (PhonePe Style)
+  static const Color primaryColor = Color(0xFF5F259F); // Premium Purple
+  static const Color successColor = Color(0xFF00C853); // Green
+  static const Color secondaryColor = Color(0xFF00C853);
   static const Color accentColor = Color(0xFFF59E0B); // Amber
   static const Color errorColor = Color(0xFFEF4444); // Red
-  static const Color backgroundColor = Color(0xFFF8FAFC);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
 
   static ThemeData get lightTheme {
@@ -91,10 +91,10 @@ class AppTheme {
       
       // Card Theme
       cardTheme: CardTheme(
-        elevation: 0,
+        elevation: 10,
+        shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(20),
         ),
         color: Colors.white,
       ),

@@ -1,162 +1,253 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
-import 'package:shop_keeper_project/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import '../../../../injection_container.dart';
+import '../../../../services/security_service.dart';
 
 class PinLockScreen extends StatefulWidget {
-  const PinLockScreen({super.key});
+  final bool isSetup;
+  
+  const PinLockScreen({super.key, this.isSetup = false});
 
   @override
   State<PinLockScreen> createState() => _PinLockScreenState();
 }
 
-class _PinLockScreenState extends State<PinLockScreen> {
-  String _enteredPin = "";
-  final String _correctPin = "1234"; // Should be stored securely in production
+class _PinLockScreenState extends State<PinLockScreen> with SingleTickerProviderStateMixin {
+  String _inputPin = "";
+  bool _isError = false;
+  bool _isLoading = false;
 
-  void _onNumberPressed(String number) {
-    if (_enteredPin.length < 4) {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    // Shake animation values
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0, end: 10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10, end: -10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10, end: 0), weight: 1),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onNumberTap(String number) {
+    if (_inputPin.length < 4 && !_isLoading) {
+      HapticFeedback.lightImpact(); // Pro Upgrade: Haptic Feedback
       setState(() {
-        _enteredPin += number;
+        _inputPin += number;
+        _isError = false; // clear error text upon typing
       });
 
-      if (_enteredPin.length == 4) {
-        if (_enteredPin == _correctPin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
+      if (_inputPin.length == 4) {
+        _checkPin();
+      }
+    }
+  }
+
+  void _checkPin() async {
+    setState(() => _isLoading = true);
+    final securityService = sl<SecurityService>();
+    final authState = context.read<AuthCubit>().state;
+    
+    String uid = "";
+    if (authState is PinRequired) {
+      uid = authState.user.uid;
+    } else if (authState is Authenticated) {
+      uid = authState.user.uid;
+    } else {
+      setState(() {
+        _isError = true;
+        _isLoading = false;
+        _inputPin = "";
+      });
+      _controller.forward(from: 0);
+      return;
+    }
+
+    if (widget.isSetup) {
+      await securityService.setPin(uid, _inputPin);
+      if (mounted) context.go('/'); // Assuming root is Dashboard
+    } else {
+      final isValid = await securityService.verifyPin(uid, _inputPin);
+      if (mounted) {
+        if (isValid) {
+          context.go('/'); 
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Incorrect PIN'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
           setState(() {
-            _enteredPin = "";
+            _isError = true;
+            _inputPin = "";
+            _isLoading = false;
           });
+          HapticFeedback.vibrate(); // Vibrate on error
+          _controller.forward(from: 0); // Shake animation
         }
       }
     }
   }
 
   void _onBackspace() {
-    if (_enteredPin.isNotEmpty) {
-      setState(() {
-        _enteredPin = _enteredPin.substring(0, _enteredPin.length - 1);
-      });
+    if (_inputPin.isNotEmpty && !_isLoading) {
+      HapticFeedback.lightImpact();
+      setState(() => _inputPin = _inputPin.substring(0, _inputPin.length - 1));
     }
+  }
+
+  Widget _buildDot(int index) {
+    bool filled = index < _inputPin.length;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: filled ? AppTheme.primaryColor : Colors.white,
+        border: Border.all(
+          color: filled ? AppTheme.primaryColor : const Color(0xFFCBD5E1),
+          width: 2,
+        ),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _numberButton(String number) {
+    return GestureDetector(
+      onTap: () => _onNumberTap(number),
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          number,
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKeypad() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: ["1", "2", "3"].map((e) => _numberButton(e)).toList(),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: ["4", "5", "6"].map((e) => _numberButton(e)).toList(),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: ["7", "8", "9"].map((e) => _numberButton(e)).toList(),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const SizedBox(width: 80, height: 80), // Empty space for alignment
+            _numberButton("0"),
+            GestureDetector(
+              onTap: _onBackspace,
+              child: Container(
+                width: 80,
+                height: 80,
+                color: Colors.transparent,
+                alignment: Alignment.center,
+                child: const Icon(Icons.backspace_outlined, size: 28, color: Color(0xFF64748B)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.primaryColor,
+      backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(),
-            const Icon(Icons.lock_outline, size: 80, color: Colors.white),
-            const SizedBox(height: 24),
-            const Text(
-              'Enter Secure PIN',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              Icon(widget.isSetup ? Icons.lock_person : Icons.lock, size: 64, color: AppTheme.primaryColor),
+              const SizedBox(height: 20),
+              Text(
+                widget.isSetup ? "Secure Your App" : "Welcome Back",
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
-            ),
-            const SizedBox(height: 48),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index < _enteredPin.length
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.3),
-                  ),
-                );
-              }),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              const SizedBox(height: 8),
+              Text(
+                widget.isSetup ? "Set a 4-Digit PIN to protect your business" : "Enter your PIN to access your shop",
+                style: const TextStyle(color: Color(0xFF64748B)),
+                textAlign: TextAlign.center,
               ),
-              child: Column(
-                children: [
-                  for (var row in [
-                    ['1', '2', '3'],
-                    ['4', '5', '6'],
-                    ['7', '8', '9'],
-                  ]) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: row
-                          .map((val) => _PinButton(
-                                text: val,
-                                onTap: () => _onNumberPressed(val),
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      const IconButton(
-                        icon: SizedBox(width: 40),
-                        onPressed: null,
+              const Spacer(),
+              
+              if (_isLoading)
+                const CircularProgressIndicator()
+              else
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(_animation.value, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(4, _buildDot),
                       ),
-                      _PinButton(
-                        text: '0',
-                        onTap: () => _onNumberPressed('0'),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.backspace_outlined, size: 28),
-                        onPressed: _onBackspace,
-                      ),
-                    ],
-                  ),
-                ],
+                    );
+                  },
+                ),
+              
+              const SizedBox(height: 32),
+              
+              SizedBox(
+                height: 24,
+                child: _isError 
+                  ? const Text("Incorrect PIN. Try again.", style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w500)) 
+                  : const SizedBox.shrink(),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class _PinButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
-
-  const _PinButton({required this.text, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(40),
-      child: Container(
-        width: 80,
-        height: 80,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
+              const Spacer(),
+              _buildKeypad(),
+              
+              const SizedBox(height: 16),
+              
+              if (!widget.isSetup)
+                TextButton(
+                  onPressed: () => context.go('/login'),
+                  child: const Text('Forgot PIN? Login with Phone/Email', style: TextStyle(color: AppTheme.primaryColor)),
+                ),
+            ],
+          ),
         ),
       ),
     );

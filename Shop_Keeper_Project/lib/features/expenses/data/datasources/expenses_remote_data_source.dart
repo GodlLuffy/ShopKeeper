@@ -18,8 +18,9 @@ class ExpensesRemoteDataSourceImpl implements ExpensesRemoteDataSource {
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
     final snapshot = await firestore!
+        .collection('users')
+        .doc(userId)
         .collection('expenses')
-        .where('userId', isEqualTo: userId)
         .where('date', isGreaterThanOrEqualTo: startOfDay)
         .where('date', isLessThanOrEqualTo: endOfDay)
         .get();
@@ -30,6 +31,11 @@ class ExpensesRemoteDataSourceImpl implements ExpensesRemoteDataSource {
   @override
   Future<void> saveExpense(ExpenseModel expense) async {
     if (firestore == null) return;
-    await firestore!.collection('expenses').doc(expense.id).set(expense.toMap());
+    await firestore!
+        .collection('users')
+        .doc(expense.userId)
+        .collection('expenses')
+        .doc(expense.id)
+        .set(expense.toMap());
   }
 }

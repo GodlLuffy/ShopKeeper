@@ -6,6 +6,7 @@ abstract class InventoryRemoteDataSource {
   Future<void> saveProduct(ProductModel product);
   Future<void> deleteProduct(String id);
   Future<void> saveInventoryLog(Map<String, dynamic> logMap);
+  Future<void> updateStockAtomic(String userId, String productId, int quantityChange);
 }
 
 class InventoryRemoteDataSourceImpl implements InventoryRemoteDataSource {
@@ -17,8 +18,9 @@ class InventoryRemoteDataSourceImpl implements InventoryRemoteDataSource {
   Future<List<ProductModel>> getProducts(String userId) async {
     if (firestore == null) return [];
     final snapshot = await firestore!
+        .collection('users')
+        .doc(userId)
         .collection('products')
-        .where('userId', isEqualTo: userId)
         .get();
     return snapshot.docs.map((doc) => ProductModel.fromMap(doc.data(), doc.id)).toList();
   }
@@ -26,7 +28,12 @@ class InventoryRemoteDataSourceImpl implements InventoryRemoteDataSource {
   @override
   Future<void> saveProduct(ProductModel product) async {
     if (firestore == null) return;
-    await firestore!.collection('products').doc(product.id).set(product.toMap());
+    await firestore!
+        .collection('users')
+        .doc(product.userId)
+        .collection('products')
+        .doc(product.id)
+        .set(product.toMap());
   }
 
   @override
@@ -38,6 +45,37 @@ class InventoryRemoteDataSourceImpl implements InventoryRemoteDataSource {
   @override
   Future<void> saveInventoryLog(Map<String, dynamic> logMap) async {
     if (firestore == null) return;
-    await firestore!.collection('inventoryLogs').add(logMap);
+    final userId = logMap['userId'];
+    if (userId == null) return;
+    await firestore!
+        .collection('users')
+        .doc(userId)
+        .collection('inventory_logs')
+        .add(logMap);
+  }
+
+  @override
+  Future<void> updateStockAtomic(String userId, String productId, int quantityChange) async {
+    if (firestore == null) return;
+    
+    final productRef = firestore!
+        .collection('users')
+        .doc(userId)
+        .collection('products')
+        .doc(productId);
+
+    await firestore!.runTransaction((transaction) async {
+      final snapshot = await transaction.get(productRef);
+      if (!snapshot.exists) return;
+      
+      final int currentStock = snapshot.data()?['stockQuantity'] ?? 0;
+      final int newStock = currentStock + quantityChange;
+      
+      if (newStock < 0) {
+        throw Exception("Insufficient stock");
+      }
+      
+      transaction.update(productRef, {'stockQuantity': newStock});
+    });
   }
 }

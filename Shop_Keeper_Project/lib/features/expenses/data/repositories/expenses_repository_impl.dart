@@ -3,8 +3,10 @@ import 'package:shop_keeper_project/core/error/failures.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_local_data_source.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_remote_data_source.dart';
 import 'package:shop_keeper_project/features/expenses/data/models/expense_model.dart';
+import 'package:shop_keeper_project/features/expenses/data/models/expense_mapper.dart';
 import 'package:shop_keeper_project/features/expenses/domain/entities/expense_entity.dart';
 import 'package:shop_keeper_project/features/expenses/domain/repositories/expenses_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class ExpensesRepositoryImpl implements ExpensesRepository {
   final ExpensesLocalDataSource localDataSource;
@@ -19,7 +21,7 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   Future<Either<Failure, List<ExpenseEntity>>> getExpensesByDate(DateTime date) async {
     try {
       final localExpenses = await localDataSource.getExpensesByDate(date);
-      return Right(localExpenses.map((t) => ExpenseModel.fromTable(t)).toList());
+      return Right(localExpenses.map((t) => ExpenseMapper.toEntity(ExpenseModel.fromTable(t))).toList());
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }
@@ -28,10 +30,22 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
   @override
   Future<Either<Failure, ExpenseEntity>> addExpense(ExpenseEntity expense) async {
     try {
-      final model = expense as ExpenseModel;
+      final expenseId = expense.id.isEmpty ? const Uuid().v4() : expense.id;
+      final expenseWithId = ExpenseEntity(
+        id: expenseId,
+        title: expense.title,
+        amount: expense.amount,
+        category: expense.category,
+        date: expense.date,
+        userId: expense.userId,
+      );
+
+      final model = ExpenseMapper.toModel(expenseWithId);
       await localDataSource.saveExpense(model.toTable(isSynced: false));
+      
       _syncExpenseToRemote(model);
-      return Right(expense);
+      
+      return Right(expenseWithId);
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }
@@ -51,7 +65,7 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     try {
       await remoteDataSource.saveExpense(model);
     } catch (_) {
-      // Background sync later
+      // Periodic sync handled by SyncService
     }
   }
 }

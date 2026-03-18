@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shop_keeper_project/core/widgets/product_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
-import 'package:shop_keeper_project/core/theme/app_theme.dart';
+
 import 'package:shop_keeper_project/features/inventory/data/models/product_model.dart';
 import 'package:uuid/uuid.dart';
 
@@ -47,49 +49,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final product = products[index];
-                final isLowStock = product.stockQuantity <= product.minStockAlert;
                 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: Text(product.name, style: Theme.of(context).textTheme.titleLarge),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Category: ${product.category}'),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text('Stock: ', style: TextStyle(
-                              color: isLowStock ? AppTheme.errorColor : Colors.black87,
-                              fontWeight: isLowStock ? FontWeight.bold : FontWeight.normal,
-                            )),
-                            Text('${product.stockQuantity}', style: TextStyle(
-                              color: isLowStock ? AppTheme.errorColor : AppTheme.successColor,
-                              fontWeight: FontWeight.bold,
-                            )),
-                            if (isLowStock) 
-                              const Padding(
-                                padding: EdgeInsets.only(left: 8.0),
-                                child: Icon(Icons.warning, color: AppTheme.errorColor, size: 16),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('₹${product.sellPrice}', style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor
-                        )),
-                        const Text('Price', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                    onTap: () => _showStockUpdateDialog(context, product),
-                  ),
+                return ProductCard(
+                  product: product,
+                  onTap: () => _showStockUpdateDialog(context, product),
                 );
               },
             );
@@ -151,7 +114,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 sellPrice: double.tryParse(sellPriceController.text) ?? 20.0,
                 stockQuantity: int.tryParse(stockController.text) ?? 10,
                 minStockAlert: int.tryParse(minStockController.text) ?? 3,
-                userId: 'dummy_user', // Fixed after Auth integration
+                userId: (context.read<AuthCubit>().state is Authenticated) 
+                    ? (context.read<AuthCubit>().state as Authenticated).user.uid 
+                    : (context.read<AuthCubit>().state is PinRequired)
+                        ? (context.read<AuthCubit>().state as PinRequired).user.uid
+                        : 'unknown',
                 createdAt: DateTime.now(),
               );
               context.read<InventoryCubit>().addProduct(product);

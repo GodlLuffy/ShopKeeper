@@ -1,131 +1,131 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 
-class AnalyticsScreen extends StatelessWidget {
+class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
+
+  @override
+  State<AnalyticsScreen> createState() => _AnalyticsScreenState();
+}
+
+class _AnalyticsScreenState extends State<AnalyticsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    context.read<SalesCubit>().loadSalesByRange(startOfMonth, now);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Shop Analytics')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle('Sales vs Expenses (Last 7 Days)'),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: _buildLineChart(),
+      appBar: AppBar(title: const Text('Monthly Analytics')),
+      body: BlocBuilder<SalesCubit, SalesState>(
+        builder: (context, state) {
+          if (state is SalesLoading) return const Center(child: CircularProgressIndicator());
+          if (state is SalesLoaded) {
+            final sales = state.sales;
+            if (sales.isEmpty) return const Center(child: Text('Not enough data for charts yet.'));
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                   _buildChartSection(
+                    title: 'Sales Trend (Monthly)',
+                    chartData: _getChartData(sales, (s) => s.totalAmount),
+                    color: AppTheme.primaryColor,
+                    yAxisLabel: '₹',
+                  ),
+                  const SizedBox(height: 32),
+                  _buildChartSection(
+                    title: 'Profit Trend (Monthly)',
+                    chartData: _getChartData(sales, (s) => s.totalProfit),
+                    color: AppTheme.successColor,
+                    yAxisLabel: '₹',
+                  ),
+                ],
+              ),
+            );
+          }
+          return const SizedBox();
+        },
+      ),
+    );
+  }
+
+  Widget _buildChartSection({
+    required String title,
+    required List<FlSpot> chartData,
+    required Color color,
+    required String yAxisLabel,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        AspectRatio(
+          aspectRatio: 1.7,
+          child: LineChart(
+            LineChartData(
+              gridData: const FlGridData(show: false),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        DateFormat('dd').format(DateTime.now().subtract(Duration(days: 30 - value.toInt()))),
+                        style: const TextStyle(fontSize: 10),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              borderData: FlBorderData(show: false),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: chartData,
+                  isCurved: true,
+                  color: color,
+                  barWidth: 4,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: false),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: color.withOpacity(0.1),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Expense Breakdown'),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: _buildPieChart(context),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-    );
-  }
-
-  Widget _buildLineChart() {
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: [
-              const FlSpot(0, 3),
-              const FlSpot(1, 1),
-              const FlSpot(2, 4),
-              const FlSpot(3, 2),
-              const FlSpot(4, 5),
-              const FlSpot(5, 3),
-              const FlSpot(6, 4),
-            ],
-            isCurved: true,
-            color: AppTheme.primaryColor,
-            barWidth: 4,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: AppTheme.primaryColor.withOpacity(0.1)),
-          ),
-          LineChartBarData(
-            spots: [
-              const FlSpot(0, 1),
-              const FlSpot(1, 2),
-              const FlSpot(2, 1.5),
-              const FlSpot(3, 3),
-              const FlSpot(4, 2),
-              const FlSpot(5, 2.5),
-              const FlSpot(6, 1),
-            ],
-            isCurved: true,
-            color: AppTheme.errorColor,
-            barWidth: 4,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: AppTheme.errorColor.withOpacity(0.05)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPieChart(BuildContext context) {
-    return BlocBuilder<ExpensesCubit, ExpensesState>(
-      builder: (context, state) {
-        if (state is ExpensesLoaded) {
-          final categories = <String, double>{};
-          for (var e in state.expenses) {
-            categories[e.category] = (categories[e.category] ?? 0) + e.amount;
-          }
-
-          if (categories.isEmpty) {
-            return const Center(child: Text("No expenses to show."));
-          }
-
-          return PieChart(
-            PieChartData(
-              sections: categories.entries.map((entry) {
-                return PieChartSectionData(
-                  color: _getCategoryColor(entry.key),
-                  value: entry.value,
-                  title: entry.key,
-                  radius: 50,
-                  titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                );
-              }).toList(),
-            ),
-          );
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Rent/Bills': return Colors.blue;
-      case 'Stock Purchase': return Colors.orange;
-      case 'Staff Salary': return Colors.purple;
-      default: return Colors.grey;
+  List<FlSpot> _getChartData(List<dynamic> sales, double Function(dynamic) getValue) {
+    // Group sales by day and convert to FlSpot
+    final Map<int, double> groupedData = {};
+    for (var sale in sales) {
+      final day = sale.date.day;
+      groupedData[day] = (groupedData[day] ?? 0) + getValue(sale);
     }
+
+    final List<FlSpot> spots = [];
+    final now = DateTime.now();
+    for (int i = 1; i <= now.day; i++) {
+       spots.add(FlSpot(i.toDouble(), groupedData[i] ?? 0));
+    }
+    return spots;
   }
 }

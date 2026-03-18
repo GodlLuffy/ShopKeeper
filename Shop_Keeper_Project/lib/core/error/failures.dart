@@ -23,3 +23,7 @@ class AuthFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure([super.message = 'No internet connection. Data will be saved locally.']);
 }
+
+class ValidationFailure extends Failure {
+  const ValidationFailure(super.message);
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
@@ -67,6 +68,11 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
           }
           return const SizedBox();
         },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => GoRouter.of(context).push('/sales/add'),
+        label: const Text('Add Sale'),
+        icon: const Icon(Icons.add_shopping_cart),
       ),
     );
   }
