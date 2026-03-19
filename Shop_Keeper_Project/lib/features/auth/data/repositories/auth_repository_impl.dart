@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shop_keeper_project/core/error/failures.dart';
 import 'package:shop_keeper_project/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:shop_keeper_project/features/auth/data/models/user_model.dart';
 import 'package:shop_keeper_project/features/auth/domain/entities/user_entity.dart';
 import 'package:shop_keeper_project/features/auth/domain/repositories/auth_repository.dart';
 
@@ -68,5 +69,22 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Option<UserEntity>> getCurrentUser() async {
     final user = await remoteDataSource.getCurrentUser();
     return user != null ? Some(user) : const None();
+  }
+
+  @override
+  Future<Either<Failure, void>> updateProfile(UserEntity user) async {
+    try {
+      final userModel = UserModel(
+        uid: user.uid,
+        name: user.name,
+        shopName: user.shopName,
+        phoneNumber: user.phoneNumber,
+        email: user.email,
+      );
+      await remoteDataSource.updateProfile(userModel);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 }

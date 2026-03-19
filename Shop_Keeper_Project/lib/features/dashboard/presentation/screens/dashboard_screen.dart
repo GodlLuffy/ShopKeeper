@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
-import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
-import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:shop_keeper_project/features/sales/domain/usecases/get_sales_by_range.dart';
+import 'package:shop_keeper_project/injection_container.dart' as di;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,166 +14,318 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  double _monthlyEarnings = 0.0;
+
   @override
   void initState() {
-    super.initState();
+    super.initState();  
     context.read<SalesCubit>().loadTodaySales();
-    context.read<ExpensesCubit>().loadTodayExpenses();
+    _fetchMonthlyEarnings();
+  }
+
+  Future<void> _fetchMonthlyEarnings() async {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    
+    final result = await di.sl<GetSalesByRange>().call(SalesRangeParams(start: startOfMonth, end: endOfMonth));
+    result.fold(
+      (failure) => null,
+      (sales) {
+        if (mounted) {
+          setState(() {
+            _monthlyEarnings = sales.fold(0.0, (sum, sale) => sum + sale.totalAmount);
+          });
+        }
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Shop Dashboard'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => context.read<AuthCubit>().logout(),
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: BlocBuilder<SalesCubit, SalesState>(
+        builder: (context, state) {
+          double todayRevenue = 0.0;
+          double todayProfit = 0.0;
+
+          if (state is SalesLoaded) {
+            todayRevenue = state.sales.fold(0.0, (sum, sale) => sum + sale.totalAmount);
+            todayProfit = state.sales.fold(0.0, (sum, sale) => sum + sale.totalProfit);
+          }
+
+          final authState = context.read<AuthCubit>().state;
+          String shopName = 'ShopKeeper';
+          if (authState is Authenticated) {
+            shopName = authState.user.shopName.isNotEmpty ? authState.user.shopName : authState.user.name;
+          }
+
+          return CustomScrollView(
+            slivers: [
+              _buildHeader(shopName, todayRevenue),
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildQuickActions(context),
+                    const SizedBox(height: 32),
+                    
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        'Overview',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildOverviewCards(todayProfit, _monthlyEarnings),
+                    
+                    const SizedBox(height: 32),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        'Weekly Sales Trend',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildWeeklyTrendChart(),
+                    
+                    const SizedBox(height: 48), // Bottom Padding
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader(String shopName, double revenue) {
+    return SliverAppBar(
+      expandedHeight: 180,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: const Color(0xFF7C3AED), // Premium Purple
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Hello, $shopName!',
+                    style: TextStyle(fontSize: 18, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '₹${revenue.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 42, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: -1),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Today's Revenue",
+                    style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings, color: Colors.white),
+          onPressed: () => context.push('/settings'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _ActionButton(
+            icon: Icons.point_of_sale_rounded,
+            color: const Color(0xFF6D28D9),
+            label: 'Sale',
+            onTap: () => context.push('/sales/add'),
+          ),
+          _ActionButton(
+            icon: Icons.inventory_2_rounded,
+            color: const Color(0xFFF59E0B),
+            label: 'Stock In',
+            onTap: () => context.push('/inventory/add'),
+          ),
+          _ActionButton(
+            icon: Icons.receipt_long_rounded,
+            color: const Color(0xFFEF4444),
+            label: 'Expense',
+            onTap: () => context.push('/expenses/add'),
+          ),
+          _ActionButton(
+            icon: Icons.psychology_rounded,
+            color: const Color(0xFF10B981),
+            label: 'AI',
+            onTap: () => context.push('/ai-assistant'),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _buildCard(
-                  title: 'Sales',
-                  valueWidget: BlocBuilder<SalesCubit, SalesState>(
-                    builder: (context, state) {
-                      if (state is SalesLoaded) {
-                        final total = state.sales.fold(0.0, (sum, item) => sum + item.totalAmount);
-                        return Text('₹$total',
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                      }
-                      return const Text('₹0',
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                    },
-                  ),
-                  icon: Icons.bar_chart,
-                  color: Colors.blue,
-                  onTap: () => context.push('/sales'),
-                ),
-                _buildCard(
-                  title: 'Profit',
-                  valueWidget: BlocBuilder<SalesCubit, SalesState>(
-                    builder: (context, state) {
-                      if (state is SalesLoaded) {
-                        final total = state.sales.fold(0.0, (sum, item) => sum + item.totalProfit);
-                        return Text('₹$total',
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                      }
-                      return const Text('₹0',
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                    },
-                  ),
-                  icon: Icons.trending_up,
-                  color: AppTheme.successColor,
-                  onTap: () => context.push('/analytics'),
-                ),
-                _buildCard(
-                  title: 'Expenses',
-                  valueWidget: BlocBuilder<ExpensesCubit, ExpensesState>(
-                    builder: (context, state) {
-                      if (state is ExpensesLoaded) {
-                        final total = state.expenses.fold(0.0, (sum, item) => sum + item.amount);
-                        return Text('₹$total',
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                      }
-                      return const Text('₹0',
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold));
-                    },
-                  ),
-                  icon: Icons.money_off,
-                  color: AppTheme.errorColor,
-                  onTap: () => context.push('/expenses'),
-                ),
-                _buildCard(
-                  title: 'Stock Alert',
-                  valueWidget: const Text('Manage',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  icon: Icons.warning,
-                  color: AppTheme.accentColor,
-                  onTap: () => context.push('/inventory'),
-                ),
-              ],
+    );
+  }
+
+  Widget _buildOverviewCards(double profit, double monthly) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _OverviewBox(
+              icon: Icons.trending_up_rounded,
+              iconColor: const Color(0xFF10B981),
+              title: "Today's Profit",
+              amount: "₹${profit.toInt()}",
             ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _actionButton("Sale", Icons.add, () => context.push('/sales/add')),
-                _actionButton("Product", Icons.inventory_2, () => context.push('/inventory/add')),
-                _actionButton("Expense", Icons.money, () => context.push('/expenses/add')),
-                _actionButton("AI Assist", Icons.psychology, () => context.push('/ai-assistant')),
-              ],
-            )
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _OverviewBox(
+              icon: Icons.account_balance_wallet_rounded,
+              iconColor: const Color(0xFF6D28D9),
+              title: "Monthly Earnings",
+              amount: "₹${monthly.toInt()}",
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCard({
-    required String title,
-    required Widget valueWidget,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+  Widget _buildWeeklyTrendChart() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        height: 220,
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 5),
-            )
-          ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
-            const SizedBox(height: 4),
-            valueWidget,
+            Expanded(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 32.0, bottom: 8.0),
+                  child: Container(
+                    width: 24,
+                    height: 48, // Mock tiny bar on Thursday as seen in screenshot
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6D28D9),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Text('Fri', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Sat', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Sun', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Mon', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Tue', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Wed', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                  Text('Thu', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _actionButton(String title, IconData icon, VoidCallback onTap) {
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({required this.icon, required this.color, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white,
-            child: Icon(icon, color: Colors.black, size: 28),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF475569), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewBox extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String amount;
+
+  const _OverviewBox({required this.icon, required this.iconColor, required this.title, required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: 16),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 13)),
+          const SizedBox(height: 8),
+          Text(amount, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
         ],
       ),
     );

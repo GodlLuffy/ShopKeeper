@@ -9,4 +9,5 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> register(String name, String email, String password, String shopName);
   Future<Either<Failure, void>> logout();
   Future<Option<UserEntity>> getCurrentUser();
+  Future<Either<Failure, void>> updateProfile(UserEntity user);
 }

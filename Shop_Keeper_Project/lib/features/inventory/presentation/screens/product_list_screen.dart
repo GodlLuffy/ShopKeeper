@@ -4,9 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
-
-import 'package:shop_keeper_project/features/inventory/data/models/product_model.dart';
+import 'package:shop_keeper_project/core/widgets/empty_state_widget.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
+import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
+import 'package:shop_keeper_project/features/sales/data/models/sale_model.dart';
+import 'package:go_router/go_router.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -30,7 +33,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_business),
-            onPressed: () => _showAddProductDialog(context),
+            onPressed: () => context.push('/inventory/add'),
             tooltip: 'Add Product',
           ),
         ],
@@ -42,7 +45,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
           } else if (state is InventoryLoaded) {
             final products = state.products;
             if (products.isEmpty) {
-              return const Center(child: Text('No products yet. Add your first product!'));
+              return const EmptyStateWidget(
+                icon: Icons.inventory_2_outlined,
+                title: 'No Products Yet',
+                message: 'Start by adding your first product.',
+              );
             }
             return ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -50,9 +57,53 @@ class _ProductListScreenState extends State<ProductListScreen> {
               itemBuilder: (context, index) {
                 final product = products[index];
                 
-                return ProductCard(
-                  product: product,
-                  onTap: () => _showStockUpdateDialog(context, product),
+                return Dismissible(
+                  key: Key(product.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    padding: const EdgeInsets.only(right: 20),
+                    alignment: Alignment.centerRight,
+                    color: Colors.red,
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (direction) {
+                    context.read<InventoryCubit>().deleteProduct(product.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${product.name} deleted')),
+                    );
+                  },
+                  child: ProductCard(
+                    product: product,
+                    onTap: () => _showStockUpdateDialog(context, product),
+                    onQuickSale: () {
+                      HapticFeedback.heavyImpact();
+                      final profit = product.sellPrice - product.buyPrice;
+                      final sale = SaleModel(
+                        id: const Uuid().v4(),
+                        productId: product.id,
+                        productName: product.name,
+                        quantitySold: 1,
+                        salePrice: product.sellPrice,
+                        totalAmount: product.sellPrice,
+                        totalProfit: profit,
+                        date: DateTime.now(),
+                        userId: (context.read<AuthCubit>().state is Authenticated)
+                            ? (context.read<AuthCubit>().state as Authenticated).user.uid
+                            : (context.read<AuthCubit>().state is PinRequired)
+                                ? (context.read<AuthCubit>().state as PinRequired).user.uid
+                                : 'unknown',
+                      );
+                      context.read<SalesCubit>().addSale(sale);
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (context.mounted) {
+                          context.read<InventoryCubit>().loadProducts();
+                        }
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Quick sale: 1x ${product.name} sold!'), duration: const Duration(seconds: 1)),
+                      );
+                    },
+                  ),
                 );
               },
             );
@@ -63,73 +114,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddProductDialog(context),
+        onPressed: () => context.push('/inventory/add'),
         label: const Text('Add Product'),
         icon: const Icon(Icons.add),
       ),
     );
   }
 
-  void _showAddProductDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final buyPriceController = TextEditingController();
-    final sellPriceController = TextEditingController();
-    final stockController = TextEditingController();
-    final minStockController = TextEditingController();
-    String category = 'General Store';
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('New Product'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-              DropdownButtonFormField<String>(
-                value: category,
-                items: ['General Store', 'Sweets/Bakery', 'Biscuits/Snacks', 'Other']
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (val) => category = val!,
-                decoration: const InputDecoration(labelText: 'Category'),
-              ),
-              TextField(controller: buyPriceController, decoration: const InputDecoration(labelText: 'Buy Price'), keyboardType: TextInputType.number),
-              TextField(controller: sellPriceController, decoration: const InputDecoration(labelText: 'Sell Price'), keyboardType: TextInputType.number),
-              TextField(controller: stockController, decoration: const InputDecoration(labelText: 'Initial Stock'), keyboardType: TextInputType.number),
-              TextField(controller: minStockController, decoration: const InputDecoration(labelText: 'Min Stock Alert'), keyboardType: TextInputType.number),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final product = ProductModel(
-                id: const Uuid().v4(),
-                name: nameController.text,
-                category: category,
-                buyPrice: double.tryParse(buyPriceController.text) ?? 10.0,
-                sellPrice: double.tryParse(sellPriceController.text) ?? 20.0,
-                stockQuantity: int.tryParse(stockController.text) ?? 10,
-                minStockAlert: int.tryParse(minStockController.text) ?? 3,
-                userId: (context.read<AuthCubit>().state is Authenticated) 
-                    ? (context.read<AuthCubit>().state as Authenticated).user.uid 
-                    : (context.read<AuthCubit>().state is PinRequired)
-                        ? (context.read<AuthCubit>().state as PinRequired).user.uid
-                        : 'unknown',
-                createdAt: DateTime.now(),
-              );
-              context.read<InventoryCubit>().addProduct(product);
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Legacy Add Product Dialog Removed In Favor of Dedicated Router Page
 
   void _showStockUpdateDialog(BuildContext context, ProductEntity product) {
     final quantityController = TextEditingController();
