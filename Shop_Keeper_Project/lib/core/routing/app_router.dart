@@ -14,6 +14,8 @@ import 'package:shop_keeper_project/features/analytics/presentation/screens/anal
 import 'package:shop_keeper_project/features/auth/presentation/screens/otp_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/register_screen.dart';
 import 'package:shop_keeper_project/features/ai_assistant/presentation/screens/ai_assistant_screen.dart';
+import 'package:shop_keeper_project/features/settings/presentation/screens/settings_screen.dart';
+import 'package:shop_keeper_project/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:shop_keeper_project/main.dart';
 
 class AppRouter {
@@ -116,6 +118,14 @@ class AppRouter {
       GoRoute(
         path: '/ai-assistant',
         builder: (context, state) => const AIAssistantScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
     ],
   );

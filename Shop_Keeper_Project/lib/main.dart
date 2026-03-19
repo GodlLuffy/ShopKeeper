@@ -82,19 +82,52 @@ void main() async {
     runApp(const MyApp());
   }
 
-  class MyApp extends StatelessWidget {
-    const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
 
-    @override
-    Widget build(BuildContext context) {
-      return MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => di.sl<AuthCubit>()), // No ..checkAuth here, already done in main
-          BlocProvider(create: (_) => di.sl<InventoryCubit>()),
-          BlocProvider(create: (_) => di.sl<SalesCubit>()),
-          BlocProvider(create: (_) => di.sl<ExpensesCubit>()),
-          BlocProvider(create: (_) => di.sl<AIAssistantCubit>()),
-        ],
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  DateTime? _lastBackgroundTime;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _lastBackgroundTime = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_lastBackgroundTime != null) {
+        final difference = DateTime.now().difference(_lastBackgroundTime!);
+        if (difference.inSeconds >= 30) {
+          di.sl<AuthCubit>().requirePin();
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => di.sl<AuthCubit>()), // No ..checkAuth here, already done in main
+        BlocProvider(create: (_) => di.sl<InventoryCubit>()),
+        BlocProvider(create: (_) => di.sl<SalesCubit>()),
+        BlocProvider(create: (_) => di.sl<ExpensesCubit>()),
+        BlocProvider(create: (_) => di.sl<AIAssistantCubit>()),
+      ],
       child: MaterialApp.router(
         title: 'ShopKeeper',
         debugShowCheckedModeBanner: false,
@@ -104,6 +137,7 @@ void main() async {
     );
   }
 }
+
 
 // Minimal placeholders if they don't exist yet to avoid breakages
 class SplashScreen extends StatelessWidget {

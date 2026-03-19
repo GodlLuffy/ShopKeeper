@@ -3,17 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shop_keeper_project/features/auth/domain/entities/user_entity.dart';
 import 'package:shop_keeper_project/features/auth/domain/repositories/auth_repository.dart';
-import 'package:shop_keeper_project/services/security_service.dart';
+import 'package:shop_keeper_project/services/pin_service.dart';
+import 'package:shop_keeper_project/services/biometric_auth_service.dart';
 
 part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
-  final SecurityService securityService;
+  final PinService pinService;
+  final BiometricAuthService biometricService;
 
   AuthCubit({
     required this.authRepository,
-    required this.securityService,
+    required this.pinService,
+    required this.biometricService,
   }) : super(AuthInitial());
 
   Future<void> checkAuth() async {
@@ -36,12 +39,9 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> _handleSuccessfulAuth(UserEntity user) async {
     try {
-      final pinEnabled = await securityService.isPinEnabled(user.uid).timeout(
-        const Duration(seconds: 3),
-        onTimeout: () => false,
-      );
+      final pinEnabled = await pinService.hasPin();
       if (pinEnabled) {
-        final bioSuccess = await securityService.authenticateWithBiometrics();
+        final bioSuccess = await biometricService.authenticate();
         if (bioSuccess) {
           emit(Authenticated(user));
         } else {
@@ -109,5 +109,42 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     await authRepository.logout();
     emit(Unauthenticated());
+  }
+
+  void requirePin() {
+    if (state is Authenticated) {
+      emit(PinRequired((state as Authenticated).user));
+    }
+  }
+
+  void unlockApp() {
+    if (state is PinRequired) {
+      emit(Authenticated((state as PinRequired).user));
+    }
+  }
+
+  Future<void> updateUserProfile({
+    required String name,
+    required String shopName,
+    required String phoneNumber,
+    required String email,
+  }) async {
+    if (state is Authenticated) {
+      final currentUser = (state as Authenticated).user;
+      final updatedUser = UserEntity(
+        uid: currentUser.uid,
+        name: name,
+        shopName: shopName,
+        phoneNumber: phoneNumber,
+        email: email,
+      );
+
+      emit(AuthLoading());
+      final result = await authRepository.updateProfile(updatedUser);
+      result.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (_) => emit(Authenticated(updatedUser)),
+      );
+    }
   }
 }

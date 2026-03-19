@@ -7,11 +7,13 @@ import 'package:shop_keeper_project/core/theme/app_theme.dart';
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
   final VoidCallback onTap;
+  final VoidCallback? onQuickSale;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.onTap,
+    this.onQuickSale,
   });
 
   @override
@@ -86,7 +88,15 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFFCBD5E1)),
+                  if (onQuickSale != null && product.stockQuantity > 0)
+                    IconButton(
+                      icon: const Icon(Icons.add_shopping_cart, color: AppTheme.primaryColor),
+                      onPressed: onQuickSale,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
+                  else
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFFCBD5E1)),
                 ],
               ),
             ],

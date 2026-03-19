@@ -4,6 +4,7 @@ import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.d
 import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/data/models/expense_model.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:shop_keeper_project/core/widgets/empty_state_widget.dart';
 import 'package:uuid/uuid.dart';
 
 class ExpenseListScreen extends StatefulWidget {
@@ -31,7 +32,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           } else if (state is ExpensesLoaded) {
             final expenses = state.expenses;
             if (expenses.isEmpty) {
-              return const Center(child: Text('No expenses recorded for today.'));
+              return const EmptyStateWidget(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'No Expenses Yet',
+                message: 'No expenses have been recorded for today.',
+              );
             }
             return ListView.builder(
               padding: const EdgeInsets.all(16),

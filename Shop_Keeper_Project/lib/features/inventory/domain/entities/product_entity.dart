@@ -15,6 +15,8 @@ class ProductEntity extends Equatable {
   final String? imageUrl;
   final String? barcode;
 
+  bool get isLowStock => stockQuantity <= minStockAlert;
+
   const ProductEntity({
     required this.id,
     required this.name,

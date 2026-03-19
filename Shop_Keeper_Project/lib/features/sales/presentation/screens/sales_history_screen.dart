@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
+import 'package:shop_keeper_project/core/widgets/empty_state_widget.dart';
 
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
@@ -41,7 +42,13 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
           if (state is SalesLoading) return const Center(child: CircularProgressIndicator());
           if (state is SalesLoaded) {
             final sales = state.sales; // In real app, filter this list
-            if (sales.isEmpty) return const Center(child: Text('No sales found for this period.'));
+            if (sales.isEmpty) {
+              return const EmptyStateWidget(
+                icon: Icons.receipt_long_outlined,
+                title: 'No Sales Found',
+                message: 'You have not made any sales for this period.',
+              );
+            }
             
             return ListView.builder(
               padding: const EdgeInsets.all(16),

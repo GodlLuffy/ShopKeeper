@@ -10,6 +10,7 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> register(String name, String email, String password, String shopName);
   Future<void> logout();
   Future<UserModel?> getCurrentUser();
+  Future<void> updateProfile(UserModel user);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -113,6 +114,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return _getUserFromFirestore(user.uid);
     }
     return null;
+  }
+
+  @override
+  Future<void> updateProfile(UserModel user) async {
+    if (firebaseAuth == null || firestore == null) return;
+    await firestore!.collection('users').doc(user.uid).update(user.toMap());
   }
 
   Future<UserModel> _getUserFromFirestore(String uid) async {

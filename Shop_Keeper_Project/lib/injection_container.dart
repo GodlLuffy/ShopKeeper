@@ -44,8 +44,11 @@ import 'package:shop_keeper_project/services/sync_service.dart';
 import 'package:shop_keeper_project/services/ai_assistant_service.dart';
 import 'package:shop_keeper_project/services/local_image_service.dart';
 import 'package:shop_keeper_project/services/security_service.dart';
+import 'package:shop_keeper_project/services/pin_service.dart';
+import 'package:shop_keeper_project/services/biometric_auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shop_keeper_project/core/routing/app_router.dart';
+import 'package:shop_keeper_project/services/report_service.dart';
 
 final sl = GetIt.instance;
 
@@ -61,7 +64,11 @@ Future<void> init({bool isDemoMode = false}) async {
   }
 
   // Features - Auth
-  sl.registerLazySingleton(() => AuthCubit(authRepository: sl(), securityService: sl()));
+  sl.registerLazySingleton(() => AuthCubit(
+    authRepository: sl(), 
+    pinService: sl(),
+    biometricService: sl(),
+  ));
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(
@@ -147,7 +154,10 @@ Future<void> init({bool isDemoMode = false}) async {
       ));
 
   sl.registerLazySingleton(() => LocalImageService());
+  sl.registerLazySingleton(() => ReportService(sl()));
   sl.registerLazySingleton(() => const FlutterSecureStorage());
+  sl.registerLazySingleton(() => PinService(sl()));
+  sl.registerLazySingleton(() => BiometricAuthService());
   sl.registerLazySingleton(() => SecurityService(sl()));
   sl.registerLazySingleton(() => AppRouter(sl()));
 
