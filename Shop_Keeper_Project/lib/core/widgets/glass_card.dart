@@ -1,54 +1,72 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
-  final double blur;
-  final double opacity;
   final EdgeInsetsGeometry? padding;
-  final BorderRadius? borderRadius;
-  final List<Color>? gradientColors;
+  final EdgeInsetsGeometry? margin;
+  final VoidCallback? onTap;
+  final double borderRadius;
+  final double borderOpacity;
+  final double backgroundOpacity;
+  final double sigma;
 
   const GlassCard({
     super.key,
     required this.child,
-    this.blur = 15,
-    this.opacity = 0.2,
     this.padding,
-    this.borderRadius,
-    this.gradientColors,
+    this.margin,
+    this.onTap,
+    this.borderRadius = 24,
+    this.borderOpacity = 0.1,
+    this.backgroundOpacity = 0.05,
+    this.sigma = 20,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding ?? const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: borderRadius ?? BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradientColors ?? [
-                Colors.white.withOpacity(opacity + 0.1),
-                Colors.white.withOpacity(opacity),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.white : Colors.black;
+    final glassColor = isDark 
+        ? Colors.white.withOpacity(backgroundOpacity) 
+        : Colors.white.withOpacity(0.7); // Light mode glass is more opaque white
+
+    return Container(
+      margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: glassColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: baseColor.withOpacity(isDark ? borderOpacity : 0.05), 
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isDark ? AppTheme.primaryIndigo : Colors.black).withOpacity(0.05),
+            blurRadius: 20,
+            spreadRadius: -5,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(borderRadius),
+              highlightColor: baseColor.withOpacity(0.05),
+              splashColor: AppTheme.primaryIndigo.withOpacity(0.1),
+              child: Padding(
+                padding: padding ?? const EdgeInsets.all(20),
+                child: child,
               ),
-            ],
+            ),
           ),
-          child: child,
         ),
       ),
     );

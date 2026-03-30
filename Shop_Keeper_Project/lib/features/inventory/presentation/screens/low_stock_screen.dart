@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
-import 'package:shop_keeper_project/features/inventory/presentation/screens/edit_product_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class LowStockScreen extends StatelessWidget {
   const LowStockScreen({super.key});
@@ -30,10 +30,7 @@ class LowStockScreen extends StatelessWidget {
                     title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Only ${product.stockQuantity} left! (Alert at ${product.minStockAlert})'),
                     trailing: ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context, 
-                        MaterialPageRoute(builder: (_) => EditProductScreen(product: product)),
-                      ),
+                      onPressed: () => context.push('/inventory/edit/${product.id}'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
                         minimumSize: const Size(80, 40),

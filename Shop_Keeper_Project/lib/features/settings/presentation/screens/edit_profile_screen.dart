@@ -5,6 +5,8 @@ import 'package:shop_keeper_project/core/widgets/custom_text_field.dart';
 import 'package:shop_keeper_project/core/widgets/glass_card.dart';
 import 'package:shop_keeper_project/core/widgets/primary_button.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:shop_keeper_project/core/localization/app_strings.dart';
+import 'package:shop_keeper_project/core/utils/app_error_handler.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -25,6 +27,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final state = context.read<AuthCubit>().state;
     if (state is Authenticated) {
+      _nameController = TextEditingController(text: state.user.name);
+      _shopNameController = TextEditingController(text: state.user.shopName);
+      _phoneController = TextEditingController(text: state.user.phoneNumber);
+      _emailController = TextEditingController(text: state.user.email);
+    } else if (state is PinRequired) {
       _nameController = TextEditingController(text: state.user.name);
       _shopNameController = TextEditingController(text: state.user.shopName);
       _phoneController = TextEditingController(text: state.user.phoneNumber);
@@ -55,94 +62,122 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             email: _emailController.text.trim(),
           );
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
+      AppErrorHandler.showSuccess(context, AppStrings.get('config_updated'));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.darkBackgroundMain,
       appBar: AppBar(
-        title: const Text('Edit Details', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text(AppStrings.get('edit_config'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 2)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        centerTitle: true,
       ),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                   const CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppTheme.primaryColor,
-                    child: Icon(Icons.edit_note, size: 50, color: Colors.white),
-                  ),
-                  const SizedBox(height: 32),
-                  GlassCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Business Information',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                          ),
-                          const SizedBox(height: 24),
-                          CustomTextField(
-                            controller: _shopNameController,
-                            label: 'Shop Name',
-                            hintText: 'Enter shop name',
-                            prefixIcon: Icons.storefront,
-                            validator: (value) => (value == null || value.isEmpty) ? 'Please enter shop name' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _nameController,
-                            label: 'Owner Name',
-                            hintText: 'Enter owner name',
-                            prefixIcon: Icons.person_outline,
-                            validator: (value) => (value == null || value.isEmpty) ? 'Please enter owner name' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _phoneController,
-                            label: 'Phone Number',
-                            hintText: 'Enter phone number',
-                            prefixIcon: Icons.phone_outlined,
-                            keyboardType: TextInputType.phone,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _emailController,
-                            label: 'Email Address',
-                            hintText: 'Enter email',
-                            prefixIcon: Icons.email_outlined,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                        ],
+          return Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topLeft,
+                radius: 1.5,
+                colors: [
+                  AppTheme.accentTeal.withOpacity(0.03),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [AppTheme.primaryIndigo, AppTheme.accentTeal],
+                        ),
+                      ),
+                      child: const CircleAvatar(
+                        radius: 54,
+                        backgroundColor: AppTheme.darkBackgroundLayer,
+                        child: Icon(Icons.settings_suggest_rounded, size: 48, color: AppTheme.accentTeal),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                  PrimaryButton(
-                    onPressed: _saveProfile,
-                    text: 'Save Changes',
-                    isLoading: state is AuthLoading,
-                  ),
-                ],
+                    const SizedBox(height: 48),
+                    GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppStrings.get('core_parameters'),
+                              style: const TextStyle(
+                                fontSize: 12, 
+                                fontWeight: FontWeight.w900, 
+                                color: AppTheme.accentTeal,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            CustomTextField(
+                              controller: _shopNameController,
+                              label: AppStrings.get('shop_designation'),
+                              hintText: AppStrings.get('search_products'), // Reusing search as placeholder or generic
+                              prefixIcon: Icons.storefront_rounded,
+                              validator: (value) => (value == null || value.isEmpty) ? AppStrings.get('product_name_required') : null,
+                            ),
+                            const SizedBox(height: 24),
+                            CustomTextField(
+                              controller: _nameController,
+                              label: AppStrings.get('operator_name'),
+                              hintText: AppStrings.get('operator_name'),
+                              prefixIcon: Icons.badge_outlined,
+                              validator: (value) => (value == null || value.isEmpty) ? AppStrings.get('product_name_required') : null,
+                            ),
+                            const SizedBox(height: 24),
+                            CustomTextField(
+                              controller: _phoneController,
+                              label: AppStrings.get('terminal_link'),
+                              hintText: userPhoneNumberHint(), // Dummy helper
+                              prefixIcon: Icons.phone_iphone_rounded,
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 24),
+                            CustomTextField(
+                              controller: _emailController,
+                              label: AppStrings.get('recovery_data'),
+                              hintText: 'Enter email',
+                              prefixIcon: Icons.alternate_email_rounded,
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    PrimaryButton(
+                      onPressed: _saveProfile,
+                      text: AppStrings.get('save_profile'),
+                      isLoading: state is AuthLoading,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         },
       ),
     );
+  }
+
+  String userPhoneNumberHint() {
+    return AppStrings.currentLanguage == AppLanguage.english ? 'Enter phone number' : 'फोन नंबर दर्ज करें';
   }
 }

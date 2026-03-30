@@ -11,6 +11,7 @@ abstract class AuthRemoteDataSource {
   Future<void> logout();
   Future<UserModel?> getCurrentUser();
   Future<void> updateProfile(UserModel user);
+  Future<void> sendPasswordResetEmail(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -84,6 +85,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       password: password,
     );
     
+    // Send email verification
+    await result.user!.sendEmailVerification();
+    
     final newUser = UserModel(
       uid: result.user!.uid,
       name: name,
@@ -120,6 +124,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> updateProfile(UserModel user) async {
     if (firebaseAuth == null || firestore == null) return;
     await firestore!.collection('users').doc(user.uid).update(user.toMap());
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (firebaseAuth != null) {
+      await firebaseAuth!.sendPasswordResetEmail(email: email);
+    }
   }
 
   Future<UserModel> _getUserFromFirestore(String uid) async {

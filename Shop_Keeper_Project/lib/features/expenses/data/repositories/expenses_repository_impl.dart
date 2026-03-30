@@ -61,6 +61,16 @@ class ExpensesRepositoryImpl implements ExpensesRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Unit>> deleteExpense(String id) async {
+    try {
+      await localDataSource.deleteExpense(id);
+      return const Right(unit);
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
   void _syncExpenseToRemote(ExpenseModel model) async {
     try {
       await remoteDataSource.saveExpense(model);

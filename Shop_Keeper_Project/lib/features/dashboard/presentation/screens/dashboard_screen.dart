@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:shop_keeper_project/core/widgets/premium_loader.dart';
+import 'package:shop_keeper_project/core/localization/app_strings.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
+import 'package:shop_keeper_project/features/dashboard/presentation/bloc/dashboard_cubit.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
-import 'package:shop_keeper_project/features/sales/domain/usecases/get_sales_by_range.dart';
-import 'package:shop_keeper_project/injection_container.dart' as di;
+import 'package:shop_keeper_project/core/widgets/glass_card.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shop_keeper_project/features/billing/bloc/billing_bloc.dart';
+import 'package:shop_keeper_project/features/billing/bloc/billing_state.dart';
+import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,320 +21,478 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  double _monthlyEarnings = 0.0;
-
   @override
   void initState() {
-    super.initState();  
-    context.read<SalesCubit>().loadTodaySales();
-    _fetchMonthlyEarnings();
-  }
-
-  Future<void> _fetchMonthlyEarnings() async {
-    final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-    
-    final result = await di.sl<GetSalesByRange>().call(SalesRangeParams(start: startOfMonth, end: endOfMonth));
-    result.fold(
-      (failure) => null,
-      (sales) {
-        if (mounted) {
-          setState(() {
-            _monthlyEarnings = sales.fold(0.0, (sum, sale) => sum + sale.totalAmount);
-          });
-        }
-      },
-    );
+    super.initState();
+    context.read<DashboardCubit>().loadDashboard();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: BlocBuilder<SalesCubit, SalesState>(
-        builder: (context, state) {
-          double todayRevenue = 0.0;
-          double todayProfit = 0.0;
+    final theme = Theme.of(context);
 
-          if (state is SalesLoaded) {
-            todayRevenue = state.sales.fold(0.0, (sum, sale) => sum + sale.totalAmount);
-            todayProfit = state.sales.fold(0.0, (sum, sale) => sum + sale.totalProfit);
-          }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<BillingBloc, BillingState>(
+          listener: (context, state) {
+            if (state is BillGenerated) {
+              context.read<DashboardCubit>().loadDashboard();
+            }
+          },
+        ),
+        BlocListener<InventoryCubit, InventoryState>(
+          listener: (context, state) {
+             context.read<DashboardCubit>().loadDashboard();
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: BlocBuilder<DashboardCubit, DashboardState>(
+          builder: (context, state) {
+            if (state is DashboardLoading) {
+              return const PremiumLoader();
+            }
 
-          final authState = context.read<AuthCubit>().state;
-          String shopName = 'ShopKeeper';
-          if (authState is Authenticated) {
-            shopName = authState.user.shopName.isNotEmpty ? authState.user.shopName : authState.user.name;
-          }
+            final data = state is DashboardLoaded ? state : null;
+            final authState = context.read<AuthCubit>().state;
+            String shopName = 'ShopKeeper';
+            if (authState is Authenticated) {
+              shopName = authState.user.shopName.isNotEmpty ? authState.user.shopName : authState.user.name;
+            }
 
-          return CustomScrollView(
-            slivers: [
-              _buildHeader(shopName, todayRevenue),
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 24),
-                    _buildQuickActions(context),
-                    const SizedBox(height: 32),
-                    
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Text(
-                        'Overview',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      ),
+            return RefreshIndicator(
+              onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
+              color: AppTheme.accentTeal,
+              backgroundColor: theme.colorScheme.surface,
+              child: CustomScrollView(
+                slivers: [
+                  _buildSaaSHeader(context, shopName, data?.todayRevenue ?? 0),
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                        _buildPremiumQuickActions(context).animate().fade().slideY(begin: 0.1),
+                        const SizedBox(height: 32),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            AppStrings.get('financial_overview'),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface, letterSpacing: -0.5),
+                          ).animate().fade().slideX(begin: -0.1),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGlassOverviewCards(context, data).animate().fade().slideY(begin: 0.1),
+
+                        const SizedBox(height: 24),
+                        _buildInventoryAlerts(context, data).animate().fade().slideY(begin: 0.1),
+
+                        const SizedBox(height: 32),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(AppStrings.get('smart_insights'), style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurfaceVariant, fontSize: 10, letterSpacing: 1.5)),
+                                  const SizedBox(height: 4),
+                                  Text(AppStrings.get('business_health'), style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, fontSize: 18)),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(color: AppTheme.accentTeal.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppTheme.accentTeal.withOpacity(0.2))),
+                                child: Text(AppStrings.get('ai_powered'), style: const TextStyle(color: AppTheme.accentTeal, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                              ),
+                            ],
+                          ).animate().fade().slideX(begin: -0.1),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildAIInsightsCards(context, data).animate().fade().slideY(begin: 0.1),
+
+                        const SizedBox(height: 32),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            AppStrings.get('revenue_trend'),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface, letterSpacing: -0.5),
+                          ).animate().fade().slideX(begin: -0.1),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFlChartWeeklyTrend(context, data?.weeklyRevenueData).animate().fade().slideY(begin: 0.1),
+
+                        const SizedBox(height: 48),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildOverviewCards(todayProfit, _monthlyEarnings),
-                    
-                    const SizedBox(height: 32),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Text(
-                        'Weekly Sales Trend',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildWeeklyTrendChart(),
-                    
-                    const SizedBox(height: 48), // Bottom Padding
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(String shopName, double revenue) {
+  Widget _buildSaaSHeader(BuildContext context, String shopName, double revenue) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SliverAppBar(
-      expandedHeight: 180,
+      expandedHeight: 240,
       pinned: true,
       elevation: 0,
-      backgroundColor: const Color(0xFF7C3AED), // Premium Purple
+      backgroundColor: Colors.transparent,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+              colors: isDark 
+                  ? [const Color(0xFF0F172A), AppTheme.darkBackgroundMain]
+                  : [AppTheme.primaryIndigo.withOpacity(0.1), theme.scaffoldBackgroundColor],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
           child: SafeArea(
             bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Hello, $shopName!',
-                    style: TextStyle(fontSize: 18, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -50, top: -50,
+                  child: Container(
+                    width: 200, height: 200,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryIndigo.withOpacity(isDark ? 0.1 : 0.05)),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '₹${revenue.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 42, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: -1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: (isDark ? Colors.white : Colors.black).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                            child: Icon(Icons.storefront, color: theme.colorScheme.onSurface),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(shopName, style: TextStyle(fontSize: 20, color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Text(AppStrings.get('todays_revenue'), style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${revenue.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 48, 
+                          color: isDark ? AppTheme.softIndigoGlow : AppTheme.primaryIndigo, 
+                          fontWeight: FontWeight.bold, 
+                          letterSpacing: -2, 
+                          shadows: isDark ? [
+                            const Shadow(color: AppTheme.primaryIndigo, blurRadius: 20),
+                          ] : null,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Today's Revenue",
-                    style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.white),
-          onPressed: () => context.push('/settings'),
-        ),
+        IconButton(onPressed: () => context.push('/settings'), icon: Icon(Icons.settings, color: theme.colorScheme.onSurface)),
       ],
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildPremiumQuickActions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _ActionButton(
-            icon: Icons.point_of_sale_rounded,
-            color: const Color(0xFF6D28D9),
-            label: 'Sale',
-            onTap: () => context.push('/sales/add'),
-          ),
-          _ActionButton(
-            icon: Icons.inventory_2_rounded,
-            color: const Color(0xFFF59E0B),
-            label: 'Stock In',
-            onTap: () => context.push('/inventory/add'),
-          ),
-          _ActionButton(
-            icon: Icons.receipt_long_rounded,
-            color: const Color(0xFFEF4444),
-            label: 'Expense',
-            onTap: () => context.push('/expenses/add'),
-          ),
-          _ActionButton(
-            icon: Icons.psychology_rounded,
-            color: const Color(0xFF10B981),
-            label: 'AI',
-            onTap: () => context.push('/ai-assistant'),
-          ),
+          _buildQuickAction(context, AppStrings.get('pos_billing'), Icons.point_of_sale_rounded, AppTheme.primaryIndigo, () => context.push('/billing')),
+          _buildQuickAction(context, AppStrings.get('inventory_label'), Icons.inventory_2_outlined, AppTheme.accentTeal, () => context.push('/inventory')),
+          _buildQuickAction(context, AppStrings.get('customers_action'), Icons.people_outline_rounded, AppTheme.successEmerald, () => context.push('/customers')),
+          _buildQuickAction(context, AppStrings.get('expenses_action'), Icons.payments_outlined, AppTheme.dangerRose, () => context.push('/expenses')),
+          _buildQuickAction(context, AppStrings.get('ai_scanner'), Icons.qr_code_scanner_rounded, Colors.amber, () => context.push('/ai-assistant')),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewCards(double profit, double monthly) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _OverviewBox(
-              icon: Icons.trending_up_rounded,
-              iconColor: const Color(0xFF10B981),
-              title: "Today's Profit",
-              amount: "₹${profit.toInt()}",
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _OverviewBox(
-              icon: Icons.account_balance_wallet_rounded,
-              iconColor: const Color(0xFF6D28D9),
-              title: "Monthly Earnings",
-              amount: "₹${monthly.toInt()}",
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyTrendChart() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 32.0, bottom: 8.0),
-                  child: Container(
-                    width: 24,
-                    height: 48, // Mock tiny bar on Thursday as seen in screenshot
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF6D28D9),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Text('Fri', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Sat', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Sun', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Mon', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Tue', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Wed', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                  Text('Thu', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({required this.icon, required this.color, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildQuickAction(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 28),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+            child: Icon(icon, color: color),
           ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF475569), fontSize: 13)),
+          Text(label, style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
         ],
       ),
     );
   }
-}
 
-class _OverviewBox extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String amount;
-
-  const _OverviewBox({required this.icon, required this.iconColor, required this.title, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+  Widget _buildGlassOverviewCards(BuildContext context, DashboardLoaded? data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => context.push('/profit-report'),
+                  child: _buildStatCard(context, AppStrings.get('todays_profit'), '₹${(data?.todayProfit ?? 0).toStringAsFixed(0)}', Icons.trending_up_rounded, AppTheme.successEmerald),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => context.push('/analytics'),
+                  child: _buildStatCard(context, AppStrings.get('monthly_revenue'), '₹${(data?.monthlyRevenue ?? 0).toStringAsFixed(0)}', Icons.account_balance_wallet_rounded, AppTheme.primaryIndigo),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard(context, AppStrings.get('todays_expenses'), '₹${(data?.todayExpenses ?? 0).toStringAsFixed(0)}', Icons.money_off_rounded, AppTheme.dangerRose)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard(context, AppStrings.get('net_profit_summary'), '₹${(data?.todayNetProfit ?? 0).toStringAsFixed(0)}', Icons.workspace_premium_rounded, AppTheme.accentTeal)),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
+    final theme = Theme.of(context);
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B), fontSize: 13)),
-          const SizedBox(height: 8),
-          Text(amount, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
         ],
       ),
+    );
+  }
+
+  Widget _buildInventoryAlerts(BuildContext context, DashboardLoaded? data) {
+    final theme = Theme.of(context);
+    if (data == null || (data.lowStockCount == 0 && data.outOfStockCount == 0)) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: GestureDetector(
+        onTap: () => context.push('/inventory'),
+        child: GlassCard(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppTheme.warningAmber.withOpacity(0.15), shape: BoxShape.circle),
+                  child: const Icon(Icons.inventory_2_rounded, color: AppTheme.warningAmber, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(AppStrings.get('stock_alerts'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.warningAmber, letterSpacing: 1)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${data.lowStockCount} low stock • ${data.outOfStockCount} out of stock',
+                        style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                const Text('VIEW', style: TextStyle(color: AppTheme.accentTeal, fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIInsightsCards(BuildContext context, DashboardLoaded? data) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        children: [
+          if (data != null && data.lowStockCount > 0)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryIndigo.withOpacity(0.2), AppTheme.accentTeal.withOpacity(0.2)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_rounded, color: AppTheme.dangerRose),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(AppStrings.get('restock_recommended'), style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                        Text('${data.lowStockCount} products running low on stock.', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/inventory'),
+                    child: const Text('RESTOCK', style: TextStyle(color: AppTheme.accentTeal, fontWeight: FontWeight.bold)),
+                  )
+                ],
+              ),
+            ).animate().shimmer(delay: 1.seconds, duration: 2.seconds),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.accentTeal.withOpacity(0.1), AppTheme.primaryIndigo.withOpacity(0.1)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.accentTeal.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.insights_rounded, color: AppTheme.accentTeal),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${AppStrings.get('business_health')} 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                      Text(
+                        data != null
+                            ? '${data.monthlySaleCount} sales this month • ${data.totalProducts} products'
+                            : 'Loading insights...',
+                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlChartWeeklyTrend(BuildContext context, List<double>? weeklyData) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final data = weeklyData ?? List.filled(7, 0);
+    final maxY = data.fold<double>(0, (a, b) => a > b ? a : b);
+    final double chartMax = maxY > 0 ? maxY * 1.2 : 10000;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: GlassCard(
+        padding: const EdgeInsets.all(20),
+        child: SizedBox(
+          height: 200,
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: chartMax,
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => theme.colorScheme.surface,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    return BarTooltipItem('₹${rod.toY.toStringAsFixed(0)}', TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold));
+                  },
+                ),
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                      final idx = value.toInt();
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        child: Text(idx < days.length ? days[idx] : '', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500, fontSize: 12)),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: FlGridData(
+                show: true, drawVerticalLine: false,
+                getDrawingHorizontalLine: (value) => FlLine(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05), strokeWidth: 1),
+              ),
+              borderData: FlBorderData(show: false),
+              barGroups: List.generate(7, (i) => _makeGroupData(context, i, data[i])),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  BarChartGroupData _makeGroupData(BuildContext context, int x, double y) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          color: AppTheme.primaryIndigo,
+          width: 14,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true, toY: 10000,
+            color: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
+          ),
+        ),
+      ],
     );
   }
 }

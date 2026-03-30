@@ -4,6 +4,7 @@ import 'package:shop_keeper_project/features/expenses/data/models/expense_model.
 abstract class ExpensesRemoteDataSource {
   Future<List<ExpenseModel>> getExpensesByDate(String userId, DateTime date);
   Future<void> saveExpense(ExpenseModel expense);
+  Future<void> deleteExpense(String id, String userId);
 }
 
 class ExpensesRemoteDataSourceImpl implements ExpensesRemoteDataSource {
@@ -37,5 +38,16 @@ class ExpensesRemoteDataSourceImpl implements ExpensesRemoteDataSource {
         .collection('expenses')
         .doc(expense.id)
         .set(expense.toMap());
+  }
+
+  @override
+  Future<void> deleteExpense(String id, String userId) async {
+    if (firestore == null) return;
+    await firestore!
+        .collection('users')
+        .doc(userId)
+        .collection('expenses')
+        .doc(id)
+        .delete();
   }
 }

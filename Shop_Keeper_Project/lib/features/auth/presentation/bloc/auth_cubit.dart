@@ -12,6 +12,9 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
   final PinService pinService;
   final BiometricAuthService biometricService;
+  
+  DateTime? _lastUnlockTime;
+  static const _pinGraceDuration = Duration(minutes: 10);
 
   AuthCubit({
     required this.authRepository,
@@ -41,8 +44,16 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final pinEnabled = await pinService.hasPin();
       if (pinEnabled) {
+        // Check session grace period (e.g. if app was restarted quickly)
+        if (_lastUnlockTime != null && 
+            DateTime.now().difference(_lastUnlockTime!) < _pinGraceDuration) {
+          emit(Authenticated(user));
+          return;
+        }
+
         final bioSuccess = await biometricService.authenticate();
         if (bioSuccess) {
+          _lastUnlockTime = DateTime.now();
           emit(Authenticated(user));
         } else {
           emit(PinRequired(user));
@@ -113,12 +124,14 @@ class AuthCubit extends Cubit<AuthState> {
 
   void requirePin() {
     if (state is Authenticated) {
+      _lastUnlockTime = null; // Reset session when explicitly locking
       emit(PinRequired((state as Authenticated).user));
     }
   }
 
   void unlockApp() {
     if (state is PinRequired) {
+      _lastUnlockTime = DateTime.now(); // Set session on unlock
       emit(Authenticated((state as PinRequired).user));
     }
   }
@@ -146,5 +159,14 @@ class AuthCubit extends Cubit<AuthState> {
         (_) => emit(Authenticated(updatedUser)),
       );
     }
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    emit(AuthLoading());
+    final result = await authRepository.sendPasswordResetEmail(email);
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(Unauthenticated()), // Return to login state after success
+    );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -16,37 +16,66 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final bool isDisabled = onPressed == null || isLoading;
+
+    return Container(
       width: double.infinity,
-      height: 60,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: isDisabled
+            ? LinearGradient(
+                colors: [
+                  AppTheme.primaryIndigo.withOpacity(0.1),
+                  AppTheme.accentTeal.withOpacity(0.1),
+                ],
+              )
+            : const LinearGradient(
+                colors: [AppTheme.primaryIndigo, AppTheme.accentTeal],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        boxShadow: isDisabled
+            ? null
+            : [
+                BoxShadow(
+                  color: AppTheme.primaryIndigo.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+      ),
       child: ElevatedButton(
-        onPressed: isLoading
+        onPressed: isDisabled
             ? null
             : () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.mediumImpact();
                 if (onPressed != null) onPressed!();
               },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5F259F),
-          disabledBackgroundColor: const Color(0xFF5F259F).withOpacity(0.5),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 4,
-          shadowColor: const Color(0xFF5F259F).withOpacity(0.4),
+          elevation: 0,
         ),
         child: isLoading
             ? const SizedBox(
                 height: 24,
                 width: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
               )
             : Text(
-                text,
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                text.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
+                  letterSpacing: 2,
                 ),
               ),
       ),

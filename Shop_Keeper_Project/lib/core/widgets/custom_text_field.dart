@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
+  final Function(String)? onChanged;
 
   const CustomTextField({
     super.key,
@@ -23,52 +24,60 @@ class CustomTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.validator,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           readOnly: readOnly,
           onTap: onTap,
           validator: validator,
-          style: GoogleFonts.inter(fontSize: 16, color: Colors.black87),
+          onChanged: onChanged,
+          style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: (isDark ? Colors.black : Colors.grey).withOpacity(0.05),
             hintText: hintText,
-            hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF94A3B8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            hintStyle: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF5F259F), width: 1.5),
+              borderSide: const BorderSide(color: AppTheme.primaryIndigo, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.red, width: 1),
+              borderSide: const BorderSide(color: AppTheme.dangerRose, width: 1),
             ),
-            prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: const Color(0xFF64748B)) : null,
+            prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppTheme.accentTeal, size: 20) : null,
             suffixIcon: suffixIcon,
           ),
         ),

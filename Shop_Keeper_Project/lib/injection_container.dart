@@ -12,6 +12,7 @@ import 'package:shop_keeper_project/features/inventory/domain/repositories/inven
 import 'package:shop_keeper_project/features/inventory/data/repositories/inventory_repository_impl.dart';
 import 'package:shop_keeper_project/features/inventory/data/datasources/inventory_local_data_source.dart';
 import 'package:shop_keeper_project/features/inventory/data/datasources/inventory_remote_data_source.dart';
+import 'package:shop_keeper_project/features/billing/bloc/billing_bloc.dart';
 import 'package:shop_keeper_project/features/inventory/domain/usecases/get_products.dart';
 import 'package:shop_keeper_project/features/inventory/domain/usecases/add_product.dart';
 import 'package:shop_keeper_project/features/inventory/domain/usecases/update_stock.dart';
@@ -29,16 +30,36 @@ import 'package:shop_keeper_project/features/sales/data/datasources/sales_remote
 import 'package:shop_keeper_project/features/expenses/domain/usecases/get_expenses_by_date.dart';
 import 'package:shop_keeper_project/features/expenses/domain/usecases/add_expense.dart';
 import 'package:shop_keeper_project/features/expenses/domain/usecases/get_today_expenses_summary.dart';
+import 'package:shop_keeper_project/features/expenses/domain/usecases/delete_expense.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
 import 'package:shop_keeper_project/features/expenses/domain/repositories/expenses_repository.dart';
 import 'package:shop_keeper_project/features/expenses/data/repositories/expenses_repository_impl.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_local_data_source.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_remote_data_source.dart';
 import 'package:shop_keeper_project/features/ai_assistant/presentation/bloc/ai_assistant_cubit.dart';
+// Dashboard Module
+import 'package:shop_keeper_project/features/dashboard/presentation/bloc/dashboard_cubit.dart';
+import 'package:shop_keeper_project/core/localization/locale_cubit.dart';
+import 'package:shop_keeper_project/features/settings/presentation/bloc/settings_cubit.dart';
+// Customer Udhar Module
+import 'package:shop_keeper_project/features/customers/presentation/bloc/customer_cubit.dart';
+import 'package:shop_keeper_project/features/customers/domain/repositories/customer_repository.dart';
+import 'package:shop_keeper_project/features/customers/data/repositories/customer_repository_impl.dart';
+import 'package:shop_keeper_project/features/customers/data/datasources/customer_local_data_source.dart';
+import 'package:shop_keeper_project/features/customers/data/datasources/customer_remote_data_source.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/get_customers.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/add_customer.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/delete_customer.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/add_credit.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/record_payment.dart';
+import 'package:shop_keeper_project/features/customers/domain/usecases/get_transactions.dart';
+
 import 'package:shop_keeper_project/database/tables/product_table.dart';
 import 'package:shop_keeper_project/database/tables/sale_table.dart';
 import 'package:shop_keeper_project/database/tables/expense_table.dart';
 import 'package:shop_keeper_project/database/tables/inventory_log_table.dart';
+import 'package:shop_keeper_project/database/tables/customer_table.dart';
+import 'package:shop_keeper_project/database/tables/credit_transaction_table.dart';
 import 'package:shop_keeper_project/core/constants/app_constants.dart';
 import 'package:shop_keeper_project/services/sync_service.dart';
 import 'package:shop_keeper_project/services/ai_assistant_service.dart';
@@ -84,22 +105,36 @@ Future<void> init({bool isDemoMode = false}) async {
         deleteProductUseCase: sl(),
         getProductByBarcodeUseCase: sl(),
       ));
+
+  sl.registerFactory(() => BillingBloc(
+        addSale: sl(),
+        updateStock: sl(),
+        addCredit: sl(),
+      ));
   
-  // Use Cases
-  sl.registerLazySingleton(() => GetSalesByDate(sl()));
-  sl.registerLazySingleton(() => AddSale(sl()));
-  sl.registerLazySingleton(() => GetTodaySalesSummary(sl()));
-  sl.registerLazySingleton(() => GetSalesByRange(sl()));
-  sl.registerLazySingleton(() => GetExpensesByDate(sl()));
-  sl.registerLazySingleton(() => AddExpense(sl()));
-  sl.registerLazySingleton(() => GetTodayExpensesSummary(sl()));
   sl.registerLazySingleton(() => GetProducts(sl()));
   sl.registerLazySingleton(() => AddProduct(sl()));
   sl.registerLazySingleton(() => UpdateStock(sl()));
   sl.registerLazySingleton(() => DeleteProduct(sl()));
   sl.registerLazySingleton(() => GetProductByBarcode(sl()));
 
-  // Repository
+  sl.registerLazySingleton(() => GetSalesByDate(sl()));
+  sl.registerLazySingleton(() => AddSale(sl()));
+  sl.registerLazySingleton(() => GetTodaySalesSummary(sl()));
+  sl.registerLazySingleton(() => GetSalesByRange(sl()));
+
+  sl.registerLazySingleton(() => GetExpensesByDate(sl()));
+  sl.registerLazySingleton(() => AddExpense(sl()));
+  sl.registerLazySingleton(() => GetTodayExpensesSummary(sl()));
+  sl.registerLazySingleton(() => DeleteExpense(sl()));
+
+  sl.registerLazySingleton(() => GetCustomers(sl()));
+  sl.registerLazySingleton(() => AddCustomer(sl()));
+  sl.registerLazySingleton(() => DeleteCustomer(sl()));
+  sl.registerLazySingleton(() => AddCreditTransaction(sl()));
+  sl.registerLazySingleton(() => RecordPayment(sl()));
+  sl.registerLazySingleton(() => GetTransactions(sl()));
+
   sl.registerLazySingleton<InventoryRepository>(
       () => InventoryRepositoryImpl(
         localDataSource: sl(), 
@@ -111,7 +146,6 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton<InventoryRemoteDataSource>(
       () => InventoryRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
 
-  // Features - Sales
   sl.registerFactory(() => SalesCubit(
         getSalesByDate: sl(),
         getSalesByRange: sl(),
@@ -124,11 +158,11 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton<SalesRemoteDataSource>(
       () => SalesRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
 
-  // Features - Expenses
   sl.registerFactory(() => ExpensesCubit(
         getExpensesByDate: sl(),
         addExpenseUseCase: sl(),
         getSummary: sl(),
+        deleteExpenseUseCase: sl(),
       ));
   sl.registerLazySingleton<ExpensesRepository>(
       () => ExpensesRepositoryImpl(localDataSource: sl(), remoteDataSource: sl()));
@@ -136,7 +170,6 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton<ExpensesRemoteDataSource>(
       () => ExpensesRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
 
-  // Features - AI Assistant
   sl.registerFactory(() => AIAssistantCubit(assistantService: sl()));
   sl.registerLazySingleton(() => AIAssistantService(
     saleBox: sl(),
@@ -144,7 +177,30 @@ Future<void> init({bool isDemoMode = false}) async {
     productBox: sl(),
   ));
 
-  // Services
+  sl.registerFactory(() => DashboardCubit(
+    getSalesByRange: sl(),
+    getExpensesByDate: sl(),
+    getProducts: sl(),
+  ));
+
+  sl.registerLazySingleton<LocaleCubit>(() => LocaleCubit());
+  sl.registerLazySingleton<SettingsCubit>(() => SettingsCubit(sl(instanceName: 'settings_box')));
+
+  sl.registerFactory(() => CustomerCubit(
+        getCustomersUseCase: sl(),
+        addCustomerUseCase: sl(),
+        deleteCustomerUseCase: sl(),
+        addCreditUseCase: sl(),
+        recordPaymentUseCase: sl(),
+        getTransactionsUseCase: sl(),
+      ));
+  sl.registerLazySingleton<CustomerRepository>(
+      () => CustomerRepositoryImpl(localDataSource: sl(), remoteDataSource: sl()));
+  sl.registerLazySingleton<CustomerLocalDataSource>(
+      () => CustomerLocalDataSourceImpl(customerBox: sl(), transactionBox: sl()));
+  sl.registerLazySingleton<CustomerRemoteDataSource>(
+      () => CustomerRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
+
   sl.registerLazySingleton(() => SyncService(
         firestore: isDemoMode ? null : sl<FirebaseFirestore>(),
         auth: isDemoMode ? null : sl<FirebaseAuth>(),
@@ -159,13 +215,16 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton(() => PinService(sl()));
   sl.registerLazySingleton(() => BiometricAuthService());
   sl.registerLazySingleton(() => SecurityService(sl()));
+  
+  // Core - Navigation
   sl.registerLazySingleton(() => AppRouter(sl()));
 
-  // Hive Adapters
   if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(ProductTableAdapter());
   if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SaleTableAdapter());
   if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(ExpenseTableAdapter());
   if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(InventoryLogTableAdapter());
+  if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(CustomerTableAdapter());
+  if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(CreditTransactionTableAdapter());
 
   // Hive Boxes with timeouts to prevent hangs
   Future<Box<T>> openBoxWithTimeout<T>(String name) async {
@@ -180,14 +239,18 @@ Future<void> init({bool isDemoMode = false}) async {
     final logBox = await openBoxWithTimeout<InventoryLogTable>(AppConstants.inventoryLogsBox);
     final saleBox = await openBoxWithTimeout<SaleTable>(AppConstants.salesBox);
     final expenseBox = await openBoxWithTimeout<ExpenseTable>(AppConstants.expensesBox);
+    final customerBox = await openBoxWithTimeout<CustomerTable>(AppConstants.customersBox);
+    final creditTxBox = await openBoxWithTimeout<CreditTransactionTable>(AppConstants.creditTransactionsBox);
+    final settingsBox = await Hive.openBox(AppConstants.settingsBox); // Settings box doesn't need type adapter
 
     sl.registerLazySingleton(() => productBox);
     sl.registerLazySingleton(() => logBox);
     sl.registerLazySingleton(() => saleBox);
     sl.registerLazySingleton(() => expenseBox);
+    sl.registerLazySingleton(() => customerBox);
+    sl.registerLazySingleton(() => creditTxBox);
+    sl.registerLazySingleton(() => settingsBox, instanceName: 'settings_box');
   } catch (e) {
-    // If boxes fail to open, the app might be unstable, but we still register them to avoid crashes
-    // though they might be empty or throw errors later.
     rethrow;
   }
 }

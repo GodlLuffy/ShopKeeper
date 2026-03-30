@@ -28,13 +28,14 @@ class ProductTableAdapter extends TypeAdapter<ProductTable> {
       createdAt: fields[8] as DateTime,
       isSynced: fields[9] as bool,
       imageUrl: fields[10] as String?,
+      barcode: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ProductTable obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class ProductTableAdapter extends TypeAdapter<ProductTable> {
       ..writeByte(9)
       ..write(obj.isSynced)
       ..writeByte(10)
-      ..write(obj.imageUrl);
+      ..write(obj.imageUrl)
+      ..writeByte(11)
+      ..write(obj.barcode);
   }
 
   @override

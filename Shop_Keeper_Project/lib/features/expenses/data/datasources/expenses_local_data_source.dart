@@ -5,6 +5,7 @@ abstract class ExpensesLocalDataSource {
   Future<List<ExpenseTable>> getExpensesByDate(DateTime date);
   Future<void> saveExpense(ExpenseTable expense);
   Future<double> getTodayExpensesSummary();
+  Future<void> deleteExpense(String id);
 }
 
 class ExpensesLocalDataSourceImpl implements ExpensesLocalDataSource {
@@ -31,5 +32,10 @@ class ExpensesLocalDataSourceImpl implements ExpensesLocalDataSource {
     final today = DateTime.now();
     final expenses = await getExpensesByDate(today);
     return expenses.fold<double>(0.0, (total, e) => total + e.amount);
+  }
+
+  @override
+  Future<void> deleteExpense(String id) async {
+    await expenseBox.delete(id);
   }
 }

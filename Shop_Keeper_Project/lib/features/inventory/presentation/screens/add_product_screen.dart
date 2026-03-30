@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
@@ -12,6 +12,9 @@ import 'package:shop_keeper_project/injection_container.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/core/widgets/custom_text_field.dart';
 import 'package:shop_keeper_project/core/widgets/primary_button.dart';
+import 'package:shop_keeper_project/core/widgets/glass_card.dart';
+import 'package:shop_keeper_project/core/localization/app_strings.dart';
+import 'package:shop_keeper_project/core/utils/app_error_handler.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -27,35 +30,51 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _stockController = TextEditingController();
   final _minStockController = TextEditingController();
   final _barcodeController = TextEditingController();
-  String _category = 'General Store';
+  late String _category;
   File? _imageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = AppStrings.get('general_store');
+  }
 
   void _showImagePicker() {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
-              title: const Text("Take Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickAndCropImage(true);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.image, color: AppTheme.primaryColor),
-              title: const Text("Choose from Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickAndCropImage(false);
-              },
-            ),
-          ],
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.darkBackgroundLayer,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppTheme.primaryIndigo),
+                title: Text(AppStrings.get('capture_image'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: AppTheme.textWhite)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndCropImage(true);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image_rounded, color: AppTheme.accentTeal),
+                title: Text(AppStrings.get('import_gallery'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: AppTheme.textWhite)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndCropImage(false);
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -72,16 +91,42 @@ class _AddProductScreenState extends State<AddProductScreen> {
   void _showBarcodeScanner() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SizedBox(
-        height: 400,
-        child: MobileScanner(
-          onDetect: (capture) {
-            final List<Barcode> barcodes = capture.barcodes;
-            if (barcodes.isNotEmpty) {
-              setState(() => _barcodeController.text = barcodes.first.rawValue ?? '');
-              Navigator.pop(context);
-            }
-          },
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: AppTheme.darkBackgroundLayer,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 32),
+            Text(AppStrings.get('barcode_acquisition'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 2, color: AppTheme.accentTeal)),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.3), width: 2),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: MobileScanner(
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      if (barcodes.isNotEmpty) {
+                        setState(() => _barcodeController.text = barcodes.first.rawValue ?? '');
+                        Navigator.pop(ctx);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );
@@ -89,7 +134,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _saveProduct() {
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product name is required')));
+      AppErrorHandler.showError(context, AppStrings.get('product_name_required'));
       return;
     }
 
@@ -102,7 +147,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
 
     final product = ProductEntity(
-      id: '', // Generated by Repository
+      id: '', 
       name: _nameController.text,
       category: _category,
       buyPrice: double.tryParse(_buyPriceController.text) ?? 0.0,
@@ -125,128 +170,167 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.darkBackgroundMain,
       appBar: AppBar(
-        title: Text('Add Product', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text(AppStrings.get('new_inventory_item'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 2)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
       body: BlocConsumer<InventoryCubit, InventoryState>(
         listener: (context, state) {
           if (state is InventoryLoaded) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Product Saved Successfully!")));
+            AppErrorHandler.showSuccess(context, AppStrings.get('item_logged'));
             Navigator.pop(context);
           } else if (state is InventoryError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+            AppErrorHandler.showError(context, state.message);
           }
         },
         builder: (context, state) {
           final isLoading = state is InventoryLoading;
           
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: isLoading ? null : _showImagePicker,
-                  child: Container(
-                    height: 160,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+          return Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topRight,
+                radius: 1.5,
+                colors: [
+                  AppTheme.primaryIndigo.withOpacity(0.03),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: isLoading ? null : _showImagePicker,
+                    child: Container(
+                      height: 180,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppTheme.darkBackgroundLayer.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      child: _imageFile == null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryIndigo.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.add_a_photo_rounded, size: 40, color: AppTheme.primaryIndigo),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(AppStrings.get('visual_specimen'), style: const TextStyle(color: AppTheme.textWhite, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+                                Text(AppStrings.get('upload_image_hint'), style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                              ],
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(28),
+                              child: Image.file(_imageFile!, fit: BoxFit.cover),
+                            ),
                     ),
-                    child: _imageFile == null
-                        ? const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
-                              SizedBox(height: 12),
-                              Text("Add Product Photo", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
-                            ],
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.file(_imageFile!, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  GlassCard(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.terminal_rounded, color: AppTheme.accentTeal, size: 18),
+                            const SizedBox(width: 12),
+                            Text(AppStrings.get('core_specifications'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppTheme.textGrey, letterSpacing: 1.5)),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        CustomTextField(
+                          label: AppStrings.get('product_designation'), 
+                          controller: _nameController,
+                          prefixIcon: Icons.badge_outlined,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        Text(AppStrings.get('data_classification'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppTheme.textGrey, letterSpacing: 1)),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkBackgroundMain.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white.withOpacity(0.08)),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Content Card adhering to Golden Layout Rule
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Details", style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-                      const SizedBox(height: 16),
-                      
-                      CustomTextField(label: "Product Name", controller: _nameController),
-                      const SizedBox(height: 16),
-                      
-                      Text("Category", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B))),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _category,
-                        items: ['General Store', 'Sweets/Bakery', 'Biscuits/Snacks', 'Other']
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                            .toList(),
-                        onChanged: (val) => setState(() => _category = val!),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButtonFormField<String>(
+                              value: _category,
+                              dropdownColor: AppTheme.darkBackgroundLayer,
+                              style: const TextStyle(color: AppTheme.textWhite, fontWeight: FontWeight.w700, fontSize: 14),
+                              decoration: const InputDecoration(border: InputBorder.none),
+                              items: [
+                                AppStrings.get('general_store'),
+                                AppStrings.get('sweets_bakery'),
+                                AppStrings.get('biscuits_snacks'),
+                                AppStrings.get('others'),
+                              ]
+                                  .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
+                                  .toList(),
+                              onChanged: (val) => setState(() => _category = val!),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      Row(
-                        children: [
-                          Expanded(child: CustomTextField(label: "Buy Price", controller: _buyPriceController, keyboardType: TextInputType.number)),
-                          const SizedBox(width: 16),
-                          Expanded(child: CustomTextField(label: "Sell Price", controller: _sellPriceController, keyboardType: TextInputType.number)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      Row(
-                        children: [
-                          Expanded(child: CustomTextField(label: "Stock Qty", controller: _stockController, keyboardType: TextInputType.number)),
-                          const SizedBox(width: 16),
-                          Expanded(child: CustomTextField(label: "Min Alert", controller: _minStockController, keyboardType: TextInputType.number)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      CustomTextField(
-                        label: "Barcode ID",
-                        controller: _barcodeController,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.qr_code_scanner, color: AppTheme.primaryColor),
-                          onPressed: _showBarcodeScanner,
+                        const SizedBox(height: 32),
+                        
+                        Row(
+                          children: [
+                            Expanded(child: CustomTextField(label: AppStrings.get('acq_cost'), controller: _buyPriceController, keyboardType: TextInputType.number, prefixIcon: Icons.shopping_basket_outlined)),
+                            const SizedBox(width: 16),
+                            Expanded(child: CustomTextField(label: AppStrings.get('retail_val'), controller: _sellPriceController, keyboardType: TextInputType.number, prefixIcon: Icons.sell_outlined)),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        
+                        Row(
+                          children: [
+                            Expanded(child: CustomTextField(label: AppStrings.get('curr_stock'), controller: _stockController, keyboardType: TextInputType.number, prefixIcon: Icons.inventory_2_outlined)),
+                            const SizedBox(width: 16),
+                            Expanded(child: CustomTextField(label: AppStrings.get('alert_lvl'), controller: _minStockController, keyboardType: TextInputType.number, prefixIcon: Icons.notification_important_outlined)),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        CustomTextField(
+                          label: AppStrings.get('barcode_encoding'),
+                          controller: _barcodeController,
+                          prefixIcon: Icons.qr_code_rounded,
+                          suffixIcon: (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) 
+                            ? IconButton(
+                                icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.accentTeal),
+                                onPressed: _showBarcodeScanner,
+                              )
+                            : null,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Reusable Premium Component
-                PrimaryButton(
-                  text: "SAVE PRODUCT",
-                  isLoading: isLoading,
-                  onPressed: _saveProduct,
-                ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 48),
+                  
+                  PrimaryButton(
+                    onPressed: isLoading ? null : _saveProduct,
+                    text: AppStrings.get('commit_to_inventory'),
+                    isLoading: isLoading,
+                  ),
+                  const SizedBox(height: 64),
+                ],
+              ),
             ),
           );
         },
@@ -254,5 +338,3 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 }
-
-

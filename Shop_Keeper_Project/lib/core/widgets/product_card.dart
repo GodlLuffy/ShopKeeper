@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:shop_keeper_project/core/widgets/glass_card.dart';
+import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
@@ -18,100 +18,126 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isLowStock = product.stockQuantity <= product.minStockAlert;
 
-    return Card(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              // Product Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            // Premium Image/Icon Container
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryIndigo.withOpacity(0.1), Colors.transparent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.1)),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
                 child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                     ? Image.file(
                         File(product.imageUrl!),
-                        width: 60,
-                        height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                        errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_rounded, color: AppTheme.primaryIndigo, size: 28),
                       )
-                    : _buildPlaceholder(),
+                    : const Icon(Icons.inventory_2_rounded, color: AppTheme.primaryIndigo, size: 28),
               ),
-              const SizedBox(width: 16),
-              
-              // Product Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E293B),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Stock: ${product.stockQuantity} ${isLowStock ? '⚠️ Low' : ''}",
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: isLowStock ? FontWeight.bold : FontWeight.normal,
-                        color: isLowStock ? AppTheme.errorColor : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Price & Arrow
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+            const SizedBox(width: 16),
+            
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₹${product.sellPrice.toInt()}',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
+                    product.name.toUpperCase(),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, letterSpacing: 0.5),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  if (onQuickSale != null && product.stockQuantity > 0)
-                    IconButton(
-                      icon: const Icon(Icons.add_shopping_cart, color: AppTheme.primaryColor),
-                      onPressed: onQuickSale,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    )
-                  else
-                    const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFFCBD5E1)),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isLowStock 
+                              ? AppTheme.dangerRose.withOpacity(0.1) 
+                              : (isDark ? Colors.black38 : Colors.grey.withOpacity(0.1)),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isLowStock ? AppTheme.dangerRose.withOpacity(0.3) : (isDark ? Colors.white10 : Colors.black12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isLowStock) ...[
+                              const Icon(Icons.warning_amber_rounded, size: 12, color: AppTheme.dangerRose),
+                              const SizedBox(width: 6),
+                            ],
+                            Text(
+                              "STOCK: ${product.stockQuantity}",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: isLowStock ? AppTheme.dangerRose : theme.colorScheme.onSurfaceVariant,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+
+            // Price & Premium Action
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '₹${product.sellPrice.toInt()}',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.accentTeal),
+                ),
+                const SizedBox(height: 12),
+                if (onQuickSale != null && product.stockQuantity > 0)
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onQuickSale,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successEmerald.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.successEmerald.withOpacity(0.2)),
+                        ),
+                        child: const Icon(Icons.bolt_rounded, color: AppTheme.successEmerald, size: 20),
+                      ),
+                    ),
+                  )
+                else
+                  Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3), size: 24),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      width: 60,
-      height: 60,
-      color: AppTheme.primaryColor.withOpacity(0.1),
-      child: const Icon(Icons.inventory_2, color: AppTheme.primaryColor),
     );
   }
 }

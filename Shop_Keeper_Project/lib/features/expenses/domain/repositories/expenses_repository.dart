@@ -6,4 +6,5 @@ abstract class ExpensesRepository {
   Future<Either<Failure, List<ExpenseEntity>>> getExpensesByDate(DateTime date);
   Future<Either<Failure, ExpenseEntity>> addExpense(ExpenseEntity expense);
   Future<Either<Failure, double>> getTodayExpensesSummary();
+  Future<Either<Failure, Unit>> deleteExpense(String id);
 }

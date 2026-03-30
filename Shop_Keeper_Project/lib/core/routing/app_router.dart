@@ -11,11 +11,16 @@ import 'package:shop_keeper_project/features/sales/presentation/screens/add_sale
 import 'package:shop_keeper_project/features/expenses/presentation/screens/expense_list_screen.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/screens/add_expense_screen.dart';
 import 'package:shop_keeper_project/features/analytics/presentation/screens/analytics_screen.dart';
+import 'package:shop_keeper_project/features/analytics/presentation/screens/profit_report_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/otp_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/register_screen.dart';
 import 'package:shop_keeper_project/features/ai_assistant/presentation/screens/ai_assistant_screen.dart';
 import 'package:shop_keeper_project/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:shop_keeper_project/features/billing/screen/billing_screen.dart';
+import 'package:shop_keeper_project/features/customers/presentation/screens/customer_list_screen.dart';
+import 'package:shop_keeper_project/features/customers/presentation/screens/customer_profile_screen.dart';
+import 'package:shop_keeper_project/features/inventory/presentation/screens/edit_product_screen.dart';
 import 'package:shop_keeper_project/main.dart';
 
 class AppRouter {
@@ -89,6 +94,13 @@ class AppRouter {
             path: 'add',
             builder: (context, state) => const AddProductScreen(),
           ),
+          GoRoute(
+            path: 'edit/:id',
+            builder: (context, state) {
+              final productId = state.pathParameters['id']!;
+              return EditProductScreen(productId: productId);
+            },
+          ),
         ],
       ),
       GoRoute(
@@ -116,6 +128,10 @@ class AppRouter {
         builder: (context, state) => const AnalyticsScreen(),
       ),
       GoRoute(
+        path: '/profit-report',
+        builder: (context, state) => const ProfitReportScreen(),
+      ),
+      GoRoute(
         path: '/ai-assistant',
         builder: (context, state) => const AIAssistantScreen(),
       ),
@@ -126,6 +142,23 @@ class AppRouter {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/billing',
+        builder: (context, state) => const BillingScreen(),
+      ),
+      GoRoute(
+        path: '/customers',
+        builder: (context, state) => const CustomerListScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final customerId = state.pathParameters['id']!;
+              return CustomerProfileScreen(customerId: customerId);
+            },
+          ),
+        ],
       ),
     ],
   );
