@@ -1,7 +1,7 @@
 ---
 milestone: ShopKeeper PRO v1.0
 version: 1.0.0
-updated: 2026-03-30T02:00:00+05:30
+updated: 2026-03-30T03:00:00+05:30
 ---
 
 # Roadmap
@@ -62,13 +62,30 @@ updated: 2026-03-30T02:00:00+05:30
 - [x] 58mm Roll Receipt Layout.
 - [x] Native Print/Share Integration.
 
+### Phase 8: AI Intelligence & Security Layer ✅
+**Objective:** Enterprise-grade security and enhanced AI business intelligence.
+**Depends on:** Phase 7
+
+**Tasks**:
+- [x] Terminal ID Service — Unique installation identifier
+- [x] Barcode Generator Service — EAN-13 + QR code generation
+- [x] Barcode Preview Card — Shareable barcode labels
+- [x] Product Detail Enhancement — Integrated barcode viewing
+- [x] Profile Screen Enhancement — Terminal ID display & copy
+- [x] AI Assistant Enhancement — Expanded query patterns (udhar, expenses, top products, weekly report)
+
+**Verification**:
+- [x] `flutter analyze` — 0 errors
+- [ ] Test barcode generation for products with barcode
+- [ ] Test terminal ID generation and display
+
 ---
 
 ## Progress Summary
 
 | Total Phases | Status | Completion |
 |--------------|--------|------------|
-| 7 / 7        | ✅      | 100%       |
+| 8 / 8        | ✅      | 100%       |
 
 ---
 

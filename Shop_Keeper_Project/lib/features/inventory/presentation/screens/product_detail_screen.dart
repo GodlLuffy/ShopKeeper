@@ -1,66 +1,97 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shop_keeper_project/features/inventory/domain/entities/product_entity.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/core/widgets/glass_card.dart';
+import 'package:shop_keeper_project/core/localization/app_strings.dart';
+import 'package:shop_keeper_project/core/utils/barcode_generator_service.dart';
+import 'package:shop_keeper_project/features/inventory/presentation/widgets/barcode_preview_card.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductEntity product;
   const ProductDetailScreen({super.key, required this.product});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(product.name)),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
+  void _showBarcodeSheet(BuildContext context) {
+    final barcodeService = BarcodeGeneratorService();
+    final barcodeData = barcodeService.validateAndFixBarcode(product.barcode);
+
+    if (barcodeData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No barcode assigned to this product'),
+          backgroundColor: AppTheme.dangerRose,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.65,
+        decoration: const BoxDecoration(
+          color: AppTheme.darkBackgroundLayer,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
         child: Column(
           children: [
-            GlassCard(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
+            const SizedBox(height: 16),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code_2_rounded, color: AppTheme.accentTeal, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'PRODUCT BARCODE',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textWhite,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    product.imageUrl != null && product.imageUrl!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.file(
-                              File(product.imageUrl!),
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 60, color: AppTheme.primaryColor),
-                            ),
-                          )
-                        : const Icon(Icons.inventory_2, size: 60, color: AppTheme.primaryColor),
-                    const SizedBox(height: 16),
-                    Text(product.name, style: Theme.of(context).textTheme.headlineMedium),
-                    Text(product.category, style: const TextStyle(color: Colors.grey)),
-                    const Divider(height: 40),
-                    _buildDetailRow('Buy Price', '₹${product.buyPrice}'),
-                    _buildDetailRow('Sell Price', '₹${product.sellPrice}', color: AppTheme.successColor),
-                    _buildDetailRow('Profit per item', '₹${product.sellPrice - product.buyPrice}', color: AppTheme.primaryColor),
-                    const Divider(height: 40),
-                    _buildDetailRow('In Stock', '${product.stockQuantity}', bold: true),
-                    _buildDetailRow('Alert Level', '${product.minStockAlert}', color: AppTheme.errorColor),
+                    BarcodePreviewCard(
+                      barcodeData: barcodeData,
+                      productName: product.name,
+                      barcodeWidget: barcodeService.buildBarcodeWidget(
+                        data: barcodeData,
+                        type: BarcodeType.ean13,
+                        width: 280,
+                        height: 100,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildQuickActions(context, barcodeData),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Navigate to logic for updating stock
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                    child: const Text('Update Stock'),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -68,19 +99,255 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {Color? color, bool bold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 16)),
-          Text(value, style: TextStyle(
-            fontSize: 18, 
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-            color: color
-          )),
+  Widget _buildQuickActions(BuildContext context, String barcodeData) {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickActionButton(
+            icon: Icons.copy_rounded,
+            label: AppStrings.get('copy') ?? 'COPY',
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: barcodeData));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Barcode copied to clipboard'),
+                  backgroundColor: AppTheme.successEmerald,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _QuickActionButton(
+            icon: Icons.share_rounded,
+            label: AppStrings.get('share') ?? 'SHARE',
+            onTap: () {
+              final text = '''
+🛒 ${product.name}
+📊 Barcode: $barcodeData
+💰 Price: ₹${product.sellPrice}
+📦 Stock: ${product.stockQuantity}
+Generated by ShopKeeper PRO
+''';
+              Share.share(text, subject: 'Product: ${product.name}');
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          if (product.barcode != null && product.barcode!.isNotEmpty)
+            IconButton(
+              onPressed: () => _showBarcodeSheet(context),
+              icon: const Icon(Icons.qr_code_2_rounded, color: AppTheme.accentTeal),
+              tooltip: 'View Barcode',
+            ),
         ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topRight,
+            radius: 1.5,
+            colors: [
+              AppTheme.primaryIndigo.withOpacity(0.03),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      product.imageUrl != null && product.imageUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.file(
+                                File(product.imageUrl!),
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 60, color: AppTheme.primaryColor),
+                              ),
+                            )
+                          : Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: AppTheme.darkBackgroundMain,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(Icons.inventory_2, size: 60, color: AppTheme.primaryColor),
+                            ),
+                      const SizedBox(height: 20),
+                      Text(
+                        product.name,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.textWhite,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryIndigo.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          product.category.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primaryIndigo,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 40),
+                      _buildDetailRow(Icons.shopping_basket_outlined, 'Buy Price', '₹${product.buyPrice}'),
+                      _buildDetailRow(Icons.sell_outlined, 'Sell Price', '₹${product.sellPrice}', color: AppTheme.successEmerald),
+                      _buildDetailRow(Icons.trending_up_rounded, 'Profit per item', '₹${(product.sellPrice - product.buyPrice).toStringAsFixed(2)}', color: AppTheme.accentTeal),
+                      const Divider(height: 40),
+                      _buildDetailRow(Icons.inventory_2_outlined, 'In Stock', '${product.stockQuantity}', bold: true, 
+                        stockColor: product.stockQuantity <= product.minStockAlert ? AppTheme.dangerRose : AppTheme.successEmerald),
+                      _buildDetailRow(Icons.notification_important_outlined, 'Alert Level', '${product.minStockAlert}', color: AppTheme.dangerRose),
+                      if (product.barcode != null && product.barcode!.isNotEmpty) ...[
+                        const Divider(height: 40),
+                        _buildDetailRow(Icons.qr_code_rounded, 'Barcode', product.barcode!, 
+                          action: TextButton.icon(
+                            onPressed: () => _showBarcodeSheet(context),
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                            label: const Text('VIEW'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.accentTeal,
+                              textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              if (product.barcode != null && product.barcode!.isNotEmpty)
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showBarcodeSheet(context),
+                    icon: const Icon(Icons.qr_code_2_rounded),
+                    label: const Text('GENERATE BARCODE LABEL'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentTeal,
+                      foregroundColor: AppTheme.darkBackgroundMain,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 64),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value, {Color? color, bool bold = false, Color? stockColor, Widget? action}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppTheme.textMuted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 14, color: AppTheme.textMuted),
+            ),
+          ),
+          if (action != null)
+            action
+          else
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: bold ? FontWeight.bold : FontWeight.w700,
+                color: stockColor ?? color ?? AppTheme.textWhite,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryIndigo.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.2)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: AppTheme.primaryIndigo, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.primaryIndigo,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

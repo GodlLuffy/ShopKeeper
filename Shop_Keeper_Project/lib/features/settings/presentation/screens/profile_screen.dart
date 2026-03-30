@@ -1,13 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/features/settings/presentation/screens/edit_profile_screen.dart';
 import 'package:shop_keeper_project/core/widgets/glass_card.dart';
 import 'package:shop_keeper_project/core/localization/app_strings.dart';
+import 'package:shop_keeper_project/core/security/terminal_id_service.dart';
+import 'package:shop_keeper_project/injection_container.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _terminalId = 'Loading...';
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadTerminalId();
+  }
+  
+  Future<void> _loadTerminalId() async {
+    try {
+      final service = sl<TerminalIdService>();
+      final id = await service.getTerminalId();
+      if (mounted) {
+        setState(() => _terminalId = id);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _terminalId = 'NOT AVAILABLE');
+      }
+    }
+  }
+  
+  void _copyTerminalId() {
+    Clipboard.setData(ClipboardData(text: _terminalId));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Terminal ID copied!'),
+        backgroundColor: AppTheme.successEmerald,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +137,7 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           _buildProfileItem(Icons.badge_outlined, AppStrings.get('operator_name'), user.name),
                           _buildDivider(),
-                          _buildProfileItem(Icons.phone_iphone_rounded, AppStrings.get('terminal_id'), user.phoneNumber),
+                          _buildTerminalIdItem(Icons.phone_iphone_rounded, AppStrings.get('terminal_id'), _terminalId),
                           _buildDivider(),
                           _buildProfileItem(Icons.alternate_email_rounded, AppStrings.get('recovery_data'), user.email.isNotEmpty ? user.email : 'NOT CONFIGURED'),
                         ],
@@ -178,6 +221,55 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTerminalIdItem(IconData icon, String label, String value) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _copyTerminalId,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentTeal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppTheme.accentTeal, size: 20),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.textMuted, letterSpacing: 1)),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.accentTeal,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.copy_rounded,
+                color: AppTheme.accentTeal.withOpacity(0.5),
+                size: 18,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
