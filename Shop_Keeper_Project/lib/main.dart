@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
+import 'package:shop_keeper_project/firebase_options.dart';
 import 'package:shop_keeper_project/injection_container.dart' as di;
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
@@ -71,24 +73,53 @@ void main() async {
   };
 
   bool firebaseInitialized = false;
+  String firebaseInitMessage = 'Demo Mode (Initialization skipped)';
+
   try {
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      await Firebase.initializeApp();
-      firebaseInitialized = true;
+    debugPrint('INITIALIZING FIREBASE (10s Timeout)...');
+    
+    // Skip Firebase on Windows for now (can be enabled later)
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      debugPrint('Desktop platform detected - skipping Firebase, using Demo Mode');
+      firebaseInitMessage = 'Demo Mode (Desktop platform)';
     } else {
-      debugPrint('Skipping default Firebase initialization on ${kIsWeb ? "Web" : "Desktop"} platform.');
+      // Initialize Firebase with a timeout to prevent infinite loading
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('Firebase connection timed out. Falling back to Demo Mode.');
+      });
+      firebaseInitialized = true;
+      firebaseInitMessage = 'Firebase connected successfully ✅';
     }
   } catch (e) {
-    debugPrint('Firebase initialization skipped (Running in Demo Mode): $e');
+    debugPrint('Firebase initialization failed or timed out: $e');
+    firebaseInitMessage = 'Demo Mode (Error: ${e is TimeoutException ? "Connection Timeout" : e})';
   }
+
+  debugPrint('--- APP CONFIGURATION ---');
+  debugPrint('Platform: ${Platform.operatingSystem}');
+  debugPrint('Status: $firebaseInitMessage');
+  debugPrint('-------------------------');
 
   try {
     debugPrint('STARTING APP INITIALIZATION...');
-    await di.init(isDemoMode: !firebaseInitialized);
+    await di.init(isDemoMode: !firebaseInitialized).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        debugPrint('INIT: DI initialization timed out');
+        throw TimeoutException('App initialization timed out');
+      },
+    );
     
     debugPrint('CHECKING AUTH STATUS...');
     // Pre-check auth before UI starts
-    await di.sl<AuthCubit>().checkAuth();
+    await di.sl<AuthCubit>().checkAuth().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        debugPrint('INIT: Auth check timed out, continuing...');
+      },
+    );
     
     debugPrint('INITIALIZATION COMPLETE ✅');
   } catch (e) {

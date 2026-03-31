@@ -38,7 +38,8 @@ class AppRouter {
       final isPin = state.matchedLocation == '/pin';
 
       if (authState is Unauthenticated) {
-        return isLoggingIn ? null : '/login';
+        final isRegistering = state.matchedLocation == '/register';
+        return (isLoggingIn || isRegistering || isSplash) ? null : '/login';
       }
 
       if (authState is PinRequired) {
@@ -46,7 +47,8 @@ class AppRouter {
       }
 
       if (authState is Authenticated) {
-        if (isLoggingIn || isSplash || isPin) {
+        final isRegistering = state.matchedLocation == '/register';
+        if (isLoggingIn || isSplash || isPin || isRegistering) {
           return '/dashboard';
         }
       }

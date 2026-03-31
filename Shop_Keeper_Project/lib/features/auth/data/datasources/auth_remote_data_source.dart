@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shop_keeper_project/features/auth/data/models/user_model.dart';
@@ -78,29 +79,58 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> register(String name, String email, String password, String shopName) async {
     if (firebaseAuth == null) {
-      return UserModel(uid: 'demo_user', name: name.isEmpty ? 'Anup' : name, shopName: shopName.isEmpty ? 'Anup Store' : shopName, phoneNumber: '', email: email.isEmpty ? 'gundelwaranup119@gmail.com' : email);
+      return UserModel(
+        uid: 'demo_user', 
+        name: name.isEmpty ? 'Anup' : name, 
+        shopName: shopName.isEmpty ? 'Anup Store' : shopName, 
+        phoneNumber: '', 
+        email: email.isEmpty ? 'gundelwaranup119@gmail.com' : email
+      );
     }
-    final result = await firebaseAuth!.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    
-    // Send email verification
-    await result.user!.sendEmailVerification();
-    
-    final newUser = UserModel(
-      uid: result.user!.uid,
-      name: name,
-      shopName: shopName,
-      phoneNumber: '',
-      email: email,
-    );
-    
-    if (firestore != null) {
-      await firestore!.collection('users').doc(newUser.uid).set(newUser.toMap());
+
+    try {
+      final result = await firebaseAuth!.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      // Attempt to send email verification, but don't fail the whole registration if it fails
+      try {
+        await result.user!.sendEmailVerification();
+      } catch (e) {
+        debugPrint('Email verification sending failed (skipping): $e');
+      }
+      
+      final newUser = UserModel(
+        uid: result.user!.uid,
+        name: name,
+        shopName: shopName,
+        phoneNumber: '',
+        email: email,
+      );
+      
+      if (firestore != null) {
+        await firestore!.collection('users').doc(newUser.uid).set(newUser.toMap());
+      }
+      
+      return newUser;
+    } on FirebaseAuthException catch (e) {
+      // Re-throw with descriptive messages for the repository to catch
+      switch (e.code) {
+        case 'email-already-in-use':
+          throw Exception('The email address is already in use by another account.');
+        case 'invalid-email':
+          throw Exception('The email address is not valid.');
+        case 'weak-password':
+          throw Exception('The password is too weak.');
+        case 'operation-not-allowed':
+          throw Exception('Email/Password accounts are not enabled in Firebase Console.');
+        default:
+          throw Exception(e.message ?? 'An unexpected error occurred during registration.');
+      }
+    } catch (e) {
+      throw Exception('Database error: ${e.toString()}');
     }
-    
-    return newUser;
   }
 
   @override

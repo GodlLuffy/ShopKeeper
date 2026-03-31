@@ -26,10 +26,14 @@ migrate_working_dir/
 **/.pub/
 **/build/
 
-# Android Studio will place build artifacts here
+# Android Studio artifacts
 **/android/app/debug
 **/android/app/profile
 **/android/app/release
 
 # Vscode
 .vscode/
+
+# Project specific
+Shop_Keeper_Project/nul
+nul

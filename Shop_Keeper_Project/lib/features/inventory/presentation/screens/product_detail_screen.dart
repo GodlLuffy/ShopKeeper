@@ -52,12 +52,12 @@ class ProductDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
-                  const Icon(Icons.qr_code_2_rounded, color: AppTheme.accentTeal, size: 24),
-                  const SizedBox(width: 12),
+                  Icon(Icons.qr_code_2_rounded, color: AppTheme.accentTeal, size: 24),
+                  SizedBox(width: 12),
                   Text(
                     'PRODUCT BARCODE',
                     style: TextStyle(
@@ -105,7 +105,7 @@ class ProductDetailScreen extends StatelessWidget {
         Expanded(
           child: _QuickActionButton(
             icon: Icons.copy_rounded,
-            label: AppStrings.get('copy') ?? 'COPY',
+            label: AppStrings.get('copy'),
             onTap: () {
               Clipboard.setData(ClipboardData(text: barcodeData));
               Navigator.pop(context);
@@ -125,7 +125,7 @@ class ProductDetailScreen extends StatelessWidget {
         Expanded(
           child: _QuickActionButton(
             icon: Icons.share_rounded,
-            label: AppStrings.get('share') ?? 'SHARE',
+            label: AppStrings.get('share'),
             onTap: () {
               final text = '''
 🛒 ${product.name}

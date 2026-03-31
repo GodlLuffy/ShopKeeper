@@ -13,48 +13,60 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
     _checkAuth();
   }
 
+  void _navigateToLogin() {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  void _navigateToDashboard() {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
+  }
+
   Future<void> _checkAuth() async {
     // Artificial delay for splash branding
     await Future.delayed(const Duration(seconds: 2));
     
-    if (!mounted) return;
+    if (!mounted || _hasNavigated) return;
     
-    // Check auth status
+    // Trigger auth check
     context.read<AuthCubit>().checkAuth();
-
-    // Safety timeout: If still on splash after 10 seconds, force move to Login
-    await Future.delayed(const Duration(seconds: 8));
-    if (mounted) {
-      final state = context.read<AuthCubit>().state;
-      if (state is AuthInitial || state is AuthLoading) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+    
+    // Safety timeout: Force navigate to Login after 10 seconds total
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted && !_hasNavigated) {
+        debugPrint('SPLASH: Safety timeout reached, navigating to Login');
+        _navigateToLogin();
       }
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
+        if (_hasNavigated) return;
+        
         if (state is Authenticated) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
+          _navigateToDashboard();
         } else if (state is Unauthenticated || state is AuthError) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
+          _navigateToLogin();
         }
       },
       child: Scaffold(

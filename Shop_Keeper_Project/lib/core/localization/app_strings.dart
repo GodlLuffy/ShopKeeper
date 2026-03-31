@@ -168,6 +168,16 @@ class AppStrings {
     'view_invoice': 'View Invoice',
     'print_receipt': 'Print Receipt',
     'share_digital': 'Share Digital Copy',
+    'inventory_label': 'INVENTORY',
+    'create_shop_account': 'CREATE SHOP ACCOUNT',
+    'owner_name': 'OWNER NAME',
+    'shop_name': 'SHOP NAME',
+    'email_address': 'EMAIL ADDRESS',
+    'password': 'PASSWORD',
+    'create_shop': 'CREATE SHOP',
+    'already_have_account': 'ALREADY HAVE A SHOP? LOGIN',
+    'registration_failed': 'REGISTRATION FAILED',
+    'new_shop_hint': 'Enter details to establish your digital storefront',
   };
 
   static const Map<String, String> _hindi = {
@@ -326,5 +336,15 @@ class AppStrings {
     'view_invoice': 'इनवॉइस देखें',
     'print_receipt': 'रसीद प्रिंट करें',
     'share_digital': 'डिजिटल कॉपी शेयर करें',
+    'inventory_label': 'इन्वेंटरी',
+    'create_shop_account': 'दुकान खाता बनाएं',
+    'owner_name': 'मालिक का नाम',
+    'shop_name': 'दुकान का नाम',
+    'email_address': 'ईमेल पता',
+    'password': 'पासवर्ड',
+    'create_shop': 'दुकान बनाएं',
+    'already_have_account': 'पहले से खाता है? लॉगिन करें',
+    'registration_failed': 'पंजीकरण विफल रहा',
+    'new_shop_hint': 'अपना डिजिटल स्टोरफ्रंट स्थापित करने के लिए विवरण दर्ज करें',
   };
 }

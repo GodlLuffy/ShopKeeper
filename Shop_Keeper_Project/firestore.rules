@@ -14,7 +14,8 @@ service cloud.firestore {
 
     // Match any document in the 'users' collection
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if isAuthenticated() && isOwner(userId);
 
       // Match products subcollection
       match /products/{productId} {

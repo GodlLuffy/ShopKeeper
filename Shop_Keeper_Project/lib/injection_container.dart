@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:get_it/get_it.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -74,14 +75,28 @@ import 'package:shop_keeper_project/services/report_service.dart';
 final sl = GetIt.instance;
 
 Future<void> init({bool isDemoMode = false}) async {
-  await Hive.initFlutter();
+  debugPrint('INIT: Starting Hive initialization...');
+  try {
+    await Hive.initFlutter();
+    debugPrint('INIT: Hive initialized successfully');
+  } catch (e) {
+    debugPrint('INIT: Hive initialization failed: $e');
+  }
   
   if (!isDemoMode) {
-    // External
-    final firestore = FirebaseFirestore.instance;
-    firestore.settings = const Settings(persistenceEnabled: true, cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED);
-    sl.registerLazySingleton(() => firestore);
-    sl.registerLazySingleton(() => FirebaseAuth.instance);
+    try {
+      // External Firebase Services
+      final firestore = FirebaseFirestore.instance;
+      firestore.settings = const Settings(
+        persistenceEnabled: true, 
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED
+      );
+      sl.registerLazySingleton(() => firestore);
+      sl.registerLazySingleton(() => FirebaseAuth.instance);
+      debugPrint('Firebase Services Registered in DI ✅');
+    } catch (e) {
+      debugPrint('CRITICAL: Firebase Instance Access Failed: $e');
+    }
   }
 
   // Features - Auth
