@@ -19,6 +19,14 @@ class Authenticated extends AuthState {
   List<Object> get props => [user];
 }
 
+class EmailVerificationPending extends AuthState {
+  final UserEntity user;
+  const EmailVerificationPending(this.user);
+
+  @override
+  List<Object> get props => [user];
+}
+
 class PinRequired extends AuthState {
   final UserEntity user;
   const PinRequired(this.user);
@@ -44,3 +52,5 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class PasswordResetSent extends AuthState {}

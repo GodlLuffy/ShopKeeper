@@ -12,6 +12,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shop_keeper_project/features/billing/bloc/billing_bloc.dart';
 import 'package:shop_keeper_project/features/billing/bloc/billing_state.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
+import 'package:shop_keeper_project/features/customers/presentation/bloc/customer_cubit.dart';
+import 'package:shop_keeper_project/features/suppliers/presentation/bloc/supplier_cubit.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -25,6 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     context.read<DashboardCubit>().loadDashboard();
+    context.read<SupplierCubit>().loadSuppliers();
   }
 
   @override
@@ -62,10 +67,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
 
             return RefreshIndicator(
-              onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
-              color: AppTheme.accentTeal,
-              backgroundColor: theme.colorScheme.surface,
+              onRefresh: () async {
+                await context.read<DashboardCubit>().loadDashboard();
+                if (context.mounted) {
+                  await context.read<CustomerCubit>().loadCustomers();
+                  await context.read<SupplierCubit>().loadSuppliers();
+                }
+              },
               child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                 slivers: [
                   _buildSaaSHeader(context, shopName, data?.todayRevenue ?? 0),
                   SliverToBoxAdapter(
@@ -88,6 +98,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         const SizedBox(height: 24),
                         _buildInventoryAlerts(context, data).animate().fade().slideY(begin: 0.1),
+                        const SizedBox(height: 12),
+                        _buildCreditAlerts(context).animate().fade().slideY(begin: 0.1),
+                        const SizedBox(height: 12),
+                        _buildSupplierAlerts(context).animate().fade().slideY(begin: 0.1),
 
                         const SizedBox(height: 32),
                         Padding(
@@ -150,13 +164,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark 
-                  ? [const Color(0xFF0F172A), AppTheme.darkBackgroundMain]
-                  : [AppTheme.primaryIndigo.withOpacity(0.1), theme.scaffoldBackgroundColor],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+            gradient: isDark 
+                ? const LinearGradient(
+                    colors: [Color(0xFF030014), Color(0xFF0B0815)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )
+                : AppTheme.premiumGradient,
           ),
           child: SafeArea(
             bottom: false,
@@ -166,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   right: -50, top: -50,
                   child: Container(
                     width: 200, height: 200,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryIndigo.withOpacity(isDark ? 0.1 : 0.05)),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.primaryOrchid.withOpacity(isDark ? 0.1 : 0.05)),
                   ),
                 ),
                 Padding(
@@ -193,12 +207,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         '₹${revenue.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 48, 
-                          color: isDark ? AppTheme.softIndigoGlow : AppTheme.primaryIndigo, 
-                          fontWeight: FontWeight.bold, 
-                          letterSpacing: -2, 
-                          shadows: isDark ? [
-                            const Shadow(color: AppTheme.primaryIndigo, blurRadius: 20),
-                          ] : null,
+                          color: isDark ? AppTheme.softOrchidGlow : AppTheme.primaryOrchid, 
+                          fontWeight: FontWeight.w900, 
+                          letterSpacing: -2.5, 
+                          shadows: [
+                            Shadow(
+                              color: isDark ? AppTheme.primaryOrchid.withOpacity(0.5) : Colors.black.withOpacity(0.1),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -217,15 +235,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPremiumQuickActions(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _buildQuickAction(context, AppStrings.get('pos_billing'), Icons.point_of_sale_rounded, AppTheme.primaryIndigo, () => context.push('/billing')),
+          const SizedBox(width: 24),
           _buildQuickAction(context, AppStrings.get('inventory_label'), Icons.inventory_2_outlined, AppTheme.accentTeal, () => context.push('/inventory')),
+          const SizedBox(width: 24),
           _buildQuickAction(context, AppStrings.get('customers_action'), Icons.people_outline_rounded, AppTheme.successEmerald, () => context.push('/customers')),
+          const SizedBox(width: 24),
           _buildQuickAction(context, AppStrings.get('expenses_action'), Icons.payments_outlined, AppTheme.dangerRose, () => context.push('/expenses')),
+          const SizedBox(width: 24),
+          _buildQuickAction(context, 'SUPPLIERS', LucideIcons.truck, AppTheme.primaryOrchid, () => context.push('/suppliers')),
+          const SizedBox(width: 24),
           _buildQuickAction(context, AppStrings.get('ai_scanner'), Icons.qr_code_scanner_rounded, Colors.amber, () => context.push('/ai-assistant')),
         ],
       ),
@@ -284,24 +310,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
   Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
     final theme = Theme.of(context);
-    return GlassCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
-          const SizedBox(height: 6),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.premiumShadow,
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+      ),
+      child: GlassCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 12),
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant, fontSize: 11, letterSpacing: 0.5)),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, letterSpacing: -0.5)),
+          ],
+        ),
       ),
     );
   }
@@ -346,6 +379,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildCreditAlerts(BuildContext context) {
+    return BlocBuilder<CustomerCubit, CustomerState>(
+      builder: (context, state) {
+        if (state is CustomerLoaded && state.totalOutstanding > 0) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: GestureDetector(
+              onTap: () => context.push('/customers'),
+              child: GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AppTheme.dangerRose.withOpacity(0.15), shape: BoxShape.circle),
+                        child: const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.dangerRose, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('CREDIT ALERTS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.dangerRose, letterSpacing: 1)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${state.customersWithCredit} customers • ₹${NumberFormat('#,##0').format(state.totalOutstanding)} outstanding',
+                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Text('VIEW', style: TextStyle(color: AppTheme.accentTeal, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildSupplierAlerts(BuildContext context) {
+    return BlocBuilder<SupplierCubit, SupplierState>(
+      builder: (context, state) {
+        if (state is SupplierLoaded) {
+          final totalDebt = state.suppliers.fold(0.0, (sum, s) => sum + s.balance);
+          if (totalDebt > 0) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: GestureDetector(
+                onTap: () => context.push('/suppliers'),
+                child: GlassCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: AppTheme.primaryOrchid.withOpacity(0.15), shape: BoxShape.circle),
+                          child: const Icon(LucideIcons.truck, color: AppTheme.primaryOrchid, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('SUPPLIER DEBT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.primaryOrchid, letterSpacing: 1)),
+                              const SizedBox(height: 4),
+                              Text(
+                                '₹${NumberFormat('#,##0').format(totalDebt)} outstanding to suppliers',
+                                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Text('VIEW', style: TextStyle(color: AppTheme.accentTeal, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   Widget _buildAIInsightsCards(BuildContext context, DashboardLoaded? data) {
     final theme = Theme.of(context);
     return Padding(
@@ -376,8 +502,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => context.push('/inventory'),
+                    TextButton(
+                    onPressed: () => context.push('/inventory/restock'),
                     child: const Text('RESTOCK', style: TextStyle(color: AppTheme.accentTeal, fontWeight: FontWeight.bold)),
                   )
                 ],

@@ -40,6 +40,9 @@ class ProductTable extends HiveObject {
   @HiveField(11)
   final String? barcode;
 
+  @HiveField(12)
+  final DateTime? updatedAt;
+
   ProductTable({
     required this.id,
     required this.name,
@@ -50,6 +53,7 @@ class ProductTable extends HiveObject {
     required this.minStockAlert,
     required this.userId,
     required this.createdAt,
+    this.updatedAt,
     this.isSynced = false,
     this.imageUrl,
     this.barcode,
@@ -66,6 +70,7 @@ class ProductTable extends HiveObject {
       'minStockAlert': minStockAlert,
       'userId': userId,
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'imageUrl': imageUrl,
       'barcode': barcode,
     };

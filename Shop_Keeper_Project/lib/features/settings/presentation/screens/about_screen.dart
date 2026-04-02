@@ -25,13 +25,13 @@ class AboutScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppTheme.primaryIndigo.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.store_mall_directory_rounded,
                   size: 80,
-                  color: AppTheme.primaryColor,
+                  color: AppTheme.primaryIndigo,
                 ),
               ),
             ),
@@ -104,7 +104,7 @@ class AboutScreen extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppTheme.primaryColor),
+        Icon(icon, size: 20, color: AppTheme.primaryIndigo),
         const SizedBox(width: 12),
         Text(
           text,

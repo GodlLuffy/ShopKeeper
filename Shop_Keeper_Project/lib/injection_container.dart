@@ -8,6 +8,7 @@ import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.d
 import 'package:shop_keeper_project/features/auth/domain/repositories/auth_repository.dart';
 import 'package:shop_keeper_project/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:shop_keeper_project/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:shop_keeper_project/features/auth/data/datasources/auth_demo_data_source.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:shop_keeper_project/features/inventory/data/repositories/inventory_repository_impl.dart';
@@ -23,6 +24,7 @@ import 'package:shop_keeper_project/features/sales/domain/usecases/get_sales_by_
 import 'package:shop_keeper_project/features/sales/domain/usecases/add_sale.dart';
 import 'package:shop_keeper_project/features/sales/domain/usecases/get_sales_by_range.dart';
 import 'package:shop_keeper_project/features/sales/domain/usecases/get_today_sales_summary.dart';
+import 'package:shop_keeper_project/core/services/notification_service.dart';
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
 import 'package:shop_keeper_project/features/sales/domain/repositories/sales_repository.dart';
 import 'package:shop_keeper_project/features/sales/data/repositories/sales_repository_impl.dart';
@@ -37,7 +39,12 @@ import 'package:shop_keeper_project/features/expenses/domain/repositories/expens
 import 'package:shop_keeper_project/features/expenses/data/repositories/expenses_repository_impl.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_local_data_source.dart';
 import 'package:shop_keeper_project/features/expenses/data/datasources/expenses_remote_data_source.dart';
+import 'package:shop_keeper_project/features/suppliers/domain/repositories/supplier_repository.dart';
+import 'package:shop_keeper_project/features/suppliers/data/repositories/supplier_repository_impl.dart';
+import 'package:shop_keeper_project/features/suppliers/data/datasources/supplier_local_data_source.dart';
+import 'package:shop_keeper_project/features/suppliers/data/datasources/supplier_remote_data_source.dart';
 import 'package:shop_keeper_project/features/ai_assistant/presentation/bloc/ai_assistant_cubit.dart';
+import 'package:shop_keeper_project/features/suppliers/presentation/bloc/supplier_cubit.dart';
 // Dashboard Module
 import 'package:shop_keeper_project/features/dashboard/presentation/bloc/dashboard_cubit.dart';
 import 'package:shop_keeper_project/core/localization/locale_cubit.dart';
@@ -61,8 +68,11 @@ import 'package:shop_keeper_project/database/tables/expense_table.dart';
 import 'package:shop_keeper_project/database/tables/inventory_log_table.dart';
 import 'package:shop_keeper_project/database/tables/customer_table.dart';
 import 'package:shop_keeper_project/database/tables/credit_transaction_table.dart';
+import 'package:shop_keeper_project/database/tables/supplier_table.dart';
+import 'package:shop_keeper_project/database/tables/supplier_transaction_table.dart';
 import 'package:shop_keeper_project/core/constants/app_constants.dart';
-import 'package:shop_keeper_project/services/sync_service.dart';
+import 'package:shop_keeper_project/core/services/sync_engine.dart';
+import 'package:shop_keeper_project/core/services/mysql_service.dart';
 import 'package:shop_keeper_project/services/ai_assistant_service.dart';
 import 'package:shop_keeper_project/services/local_image_service.dart';
 import 'package:shop_keeper_project/services/security_service.dart';
@@ -71,10 +81,28 @@ import 'package:shop_keeper_project/services/biometric_auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shop_keeper_project/core/routing/app_router.dart';
 import 'package:shop_keeper_project/services/report_service.dart';
+import 'package:shop_keeper_project/services/seed_data_service.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init({bool isDemoMode = false}) async {
+  if (!kIsWeb) {
+    final String mySqlHost = defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost';
+    
+    final mysqlService = MySQLService(
+      host: mySqlHost, 
+      port: 3307,
+      userName: 'root',
+      password: 'Luffy__007', 
+      databaseName: 'shopkeeper_backup',
+    );
+    
+    // Initialize MySQL Schema (Create tables if they don't exist)
+    unawaited(mysqlService.initializeSchema());
+    
+    sl.registerLazySingleton<MySQLService>(() => mysqlService);
+  }
+
   debugPrint('INIT: Starting Hive initialization...');
   try {
     await Hive.initFlutter();
@@ -104,13 +132,20 @@ Future<void> init({bool isDemoMode = false}) async {
     authRepository: sl(), 
     pinService: sl(),
     biometricService: sl(),
+    isDemoMode: isDemoMode,
   ));
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: sl()));
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-      () => AuthRemoteDataSourceImpl(
-        firebaseAuth: isDemoMode ? null : sl<FirebaseAuth>(), 
-        firestore: isDemoMode ? null : sl<FirebaseFirestore>()
-      ));
+  
+  sl.registerLazySingleton<AuthRemoteDataSource>(() {
+    if (isDemoMode) {
+      return AuthDemoDataSourceImpl();
+    } else {
+      return AuthRemoteDataSourceImpl(
+        firebaseAuth: sl<FirebaseAuth>(), 
+        firestore: sl<FirebaseFirestore>()
+      );
+    }
+  });
 
   // Features - Inventory
   sl.registerFactory(() => InventoryCubit(
@@ -185,12 +220,28 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton<ExpensesRemoteDataSource>(
       () => ExpensesRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
 
-  sl.registerFactory(() => AIAssistantCubit(assistantService: sl()));
   sl.registerLazySingleton(() => AIAssistantService(
     saleBox: sl(),
     expenseBox: sl(),
     productBox: sl(),
   ));
+
+  // Features - Suppliers
+  sl.registerLazySingleton<SupplierLocalDataSource>(() => SupplierLocalDataSourceImpl(
+    supplierBox: sl(),
+    transactionBox: sl(),
+  ));
+  sl.registerLazySingleton<SupplierRemoteDataSource>(() => SupplierRemoteDataSourceImpl(
+    firestore: isDemoMode ? null : sl(),
+    auth: isDemoMode ? null : sl(),
+  ));
+  sl.registerLazySingleton<SupplierRepository>(() => SupplierRepositoryImpl(
+    localDataSource: sl(),
+    remoteDataSource: sl(),
+    syncEngine: sl(),
+  ));
+
+  sl.registerFactory(() => SupplierCubit(repository: sl()));
 
   sl.registerFactory(() => DashboardCubit(
     getSalesByRange: sl(),
@@ -216,13 +267,20 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton<CustomerRemoteDataSource>(
       () => CustomerRemoteDataSourceImpl(firestore: isDemoMode ? null : sl<FirebaseFirestore>()));
 
-  sl.registerLazySingleton(() => SyncService(
-        firestore: isDemoMode ? null : sl<FirebaseFirestore>(),
-        auth: isDemoMode ? null : sl<FirebaseAuth>(),
-        productBox: sl(),
-        saleBox: sl(),
-        expenseBox: sl(),
-      ));
+
+  sl.registerLazySingleton(() => SyncEngine(
+    firestore: isDemoMode ? null : sl<FirebaseFirestore>(),
+    auth: isDemoMode ? null : sl<FirebaseAuth>(),
+    productBox: sl(),
+    saleBox: sl(),
+    expenseBox: sl(),
+    customerBox: sl(),
+    transactionBox: sl(),
+    supplierBox: sl(),
+    supplierTxBox: sl(),
+    pendingOpsBox: sl(instanceName: 'pending_ops_box'),
+    mysqlService: sl.isRegistered<MySQLService>() ? sl<MySQLService>() : null,
+  ));
 
   sl.registerLazySingleton(() => LocalImageService());
   sl.registerLazySingleton(() => ReportService(sl()));
@@ -230,6 +288,16 @@ Future<void> init({bool isDemoMode = false}) async {
   sl.registerLazySingleton(() => PinService(sl()));
   sl.registerLazySingleton(() => BiometricAuthService());
   sl.registerLazySingleton(() => SecurityService(sl()));
+  sl.registerLazySingleton(() => SeedDataService(
+    productBox: sl(),
+    expenseBox: sl(),
+    customerBox: sl(),
+    settingsBox: sl(instanceName: 'settings_box'),
+  ));
+  
+  sl.registerLazySingleton(() => NotificationService());
+  
+  // Core - Navigation
   
   // Core - Navigation
   sl.registerLazySingleton(() => AppRouter(sl()));
@@ -240,6 +308,9 @@ Future<void> init({bool isDemoMode = false}) async {
   if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(InventoryLogTableAdapter());
   if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(CustomerTableAdapter());
   if (!Hive.isAdapterRegistered(6)) Hive.registerAdapter(CreditTransactionTableAdapter());
+  if (!Hive.isAdapterRegistered(7)) Hive.registerAdapter(SupplierTableAdapter());
+  if (!Hive.isAdapterRegistered(8)) Hive.registerAdapter(SupplierTransactionTypeAdapter());
+  if (!Hive.isAdapterRegistered(9)) Hive.registerAdapter(SupplierTransactionTableAdapter());
 
   // Hive Boxes with timeouts to prevent hangs
   Future<Box<T>> openBoxWithTimeout<T>(String name) async {
@@ -256,7 +327,10 @@ Future<void> init({bool isDemoMode = false}) async {
     final expenseBox = await openBoxWithTimeout<ExpenseTable>(AppConstants.expensesBox);
     final customerBox = await openBoxWithTimeout<CustomerTable>(AppConstants.customersBox);
     final creditTxBox = await openBoxWithTimeout<CreditTransactionTable>(AppConstants.creditTransactionsBox);
-    final settingsBox = await Hive.openBox(AppConstants.settingsBox); // Settings box doesn't need type adapter
+    final supplierBox = await openBoxWithTimeout<SupplierTable>('suppliers');
+    final supplierTxBox = await openBoxWithTimeout<SupplierTransactionTable>('supplier_transactions');
+    final settingsBox = await Hive.openBox(AppConstants.settingsBox);
+    final pendingOpsBox = await Hive.openBox('pending_operations');
 
     sl.registerLazySingleton(() => productBox);
     sl.registerLazySingleton(() => logBox);
@@ -264,7 +338,10 @@ Future<void> init({bool isDemoMode = false}) async {
     sl.registerLazySingleton(() => expenseBox);
     sl.registerLazySingleton(() => customerBox);
     sl.registerLazySingleton(() => creditTxBox);
+    sl.registerLazySingleton(() => supplierBox);
+    sl.registerLazySingleton(() => supplierTxBox);
     sl.registerLazySingleton(() => settingsBox, instanceName: 'settings_box');
+    sl.registerLazySingleton(() => pendingOpsBox, instanceName: 'pending_ops_box');
   } catch (e) {
     rethrow;
   }

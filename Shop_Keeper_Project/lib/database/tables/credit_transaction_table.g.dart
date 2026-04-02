@@ -6,7 +6,8 @@ part of 'credit_transaction_table.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class CreditTransactionTableAdapter extends TypeAdapter<CreditTransactionTable> {
+class CreditTransactionTableAdapter
+    extends TypeAdapter<CreditTransactionTable> {
   @override
   final int typeId = 6;
 
@@ -27,13 +28,14 @@ class CreditTransactionTableAdapter extends TypeAdapter<CreditTransactionTable> 
       balanceAfter: fields[7] as double,
       isSynced: fields[8] as bool,
       billId: fields[9] as String?,
+      updatedAt: fields[10] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, CreditTransactionTable obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +55,9 @@ class CreditTransactionTableAdapter extends TypeAdapter<CreditTransactionTable> 
       ..writeByte(8)
       ..write(obj.isSynced)
       ..writeByte(9)
-      ..write(obj.billId);
+      ..write(obj.billId)
+      ..writeByte(10)
+      ..write(obj.updatedAt);
   }
 
   @override

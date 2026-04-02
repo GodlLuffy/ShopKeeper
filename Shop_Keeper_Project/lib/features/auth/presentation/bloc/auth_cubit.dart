@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:shop_keeper_project/features/auth/domain/entities/user_entity.dart';
 import 'package:shop_keeper_project/features/auth/domain/repositories/auth_repository.dart';
 import 'package:shop_keeper_project/services/pin_service.dart';
@@ -12,6 +14,7 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
   final PinService pinService;
   final BiometricAuthService biometricService;
+  final bool isDemoMode;
   
   DateTime? _lastUnlockTime;
   static const _pinGraceDuration = Duration(minutes: 10);
@@ -20,6 +23,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.authRepository,
     required this.pinService,
     required this.biometricService,
+    this.isDemoMode = false,
   }) : super(AuthInitial());
 
   Future<void> checkAuth() async {
@@ -35,35 +39,80 @@ class AuthCubit extends Cubit<AuthState> {
         (user) => _handleSuccessfulAuth(user),
       );
     } catch (e) {
-      // If auth check hangs or fails, fall back to unauthenticated to let the user see the login screen
       emit(Unauthenticated());
     }
   }
 
   Future<void> _handleSuccessfulAuth(UserEntity user) async {
+    final isVerified = await _checkEmailVerification();
+    final userWithVerification = user.copyWith(isEmailVerified: isVerified);
+    
+    if (!isVerified) {
+      emit(EmailVerificationPending(userWithVerification));
+      return;
+    }
+
     try {
       final pinEnabled = await pinService.hasPin();
       if (pinEnabled) {
-        // Check session grace period (e.g. if app was restarted quickly)
         if (_lastUnlockTime != null && 
             DateTime.now().difference(_lastUnlockTime!) < _pinGraceDuration) {
-          emit(Authenticated(user));
+          emit(Authenticated(userWithVerification));
           return;
         }
 
         final bioSuccess = await biometricService.authenticate();
         if (bioSuccess) {
           _lastUnlockTime = DateTime.now();
-          emit(Authenticated(user));
+          emit(Authenticated(userWithVerification));
         } else {
-          emit(PinRequired(user));
+          emit(PinRequired(userWithVerification));
         }
       } else {
-        emit(Authenticated(user));
+        emit(Authenticated(userWithVerification));
       }
     } catch (e) {
-      // Emergency fallback to authenticated if PIN service hangs
-      emit(Authenticated(user));
+      emit(Authenticated(userWithVerification));
+    }
+  }
+
+  Future<bool> _checkEmailVerification() async {
+    if (isDemoMode) return true;
+    try {
+      final firebaseUser = firebase_auth.FirebaseAuth.instance.currentUser;
+      return firebaseUser?.emailVerified ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> refreshEmailVerification() async {
+    if (isDemoMode) return;
+    if (state is EmailVerificationPending) {
+      final user = (state as EmailVerificationPending).user;
+      try {
+        final firebaseUser = firebase_auth.FirebaseAuth.instance.currentUser;
+        await firebaseUser?.reload();
+        
+        final isVerified = firebaseUser?.emailVerified ?? false;
+        if (isVerified) {
+          await _handleSuccessfulAuth(user.copyWith(isEmailVerified: true));
+        }
+      } catch (e) {
+        debugPrint('AUTH: Error refreshing verification: $e');
+      }
+    }
+  }
+
+  Future<void> resendVerificationEmail() async {
+    if (isDemoMode) return;
+    try {
+      final user = firebase_auth.FirebaseAuth.instance.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      }
+    } catch (e) {
+      emit(const AuthError('Check your inbox or try again in a minute.'));
     }
   }
 
@@ -166,7 +215,7 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await authRepository.sendPasswordResetEmail(email);
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (_) => emit(Unauthenticated()), // Return to login state after success
+      (_) => emit(PasswordResetSent()),
     );
   }
 }

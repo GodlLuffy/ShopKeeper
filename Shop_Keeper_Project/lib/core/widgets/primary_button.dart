@@ -26,22 +26,19 @@ class PrimaryButton extends StatelessWidget {
         gradient: isDisabled
             ? LinearGradient(
                 colors: [
-                  AppTheme.primaryIndigo.withOpacity(0.1),
-                  AppTheme.accentTeal.withOpacity(0.1),
+                  AppTheme.primaryOrchid.withOpacity(0.1),
+                  AppTheme.secondaryCyan.withOpacity(0.1),
                 ],
               )
-            : const LinearGradient(
-                colors: [AppTheme.primaryIndigo, AppTheme.accentTeal],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            : AppTheme.premiumGradient,
         boxShadow: isDisabled
             ? null
             : [
                 BoxShadow(
-                  color: AppTheme.primaryIndigo.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  color: AppTheme.primaryOrchid.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -2,
                 ),
               ],
       ),

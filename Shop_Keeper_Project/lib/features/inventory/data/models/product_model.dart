@@ -13,6 +13,7 @@ class ProductModel extends ProductEntity {
     required super.minStockAlert,
     required super.userId,
     required super.createdAt,
+    super.updatedAt,
     super.imageUrl,
     super.barcode,
   });
@@ -28,6 +29,7 @@ class ProductModel extends ProductEntity {
       minStockAlert: table.minStockAlert,
       userId: table.userId,
       createdAt: table.createdAt,
+      updatedAt: table.updatedAt,
       imageUrl: table.imageUrl,
       barcode: table.barcode,
     );
@@ -44,6 +46,7 @@ class ProductModel extends ProductEntity {
       minStockAlert: minStockAlert,
       userId: userId,
       createdAt: createdAt,
+      updatedAt: updatedAt,
       isSynced: isSynced,
       imageUrl: imageUrl,
       barcode: barcode,
@@ -61,6 +64,7 @@ class ProductModel extends ProductEntity {
       minStockAlert: map['minStockAlert'] ?? 0,
       userId: map['userId'] ?? '',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      updatedAt: map['updatedAt'] != null ? (map['updatedAt'] as Timestamp).toDate() : null,
       imageUrl: map['imageUrl'],
       barcode: map['barcode'],
     );
@@ -76,6 +80,7 @@ class ProductModel extends ProductEntity {
       'minStockAlert': minStockAlert,
       'userId': userId,
       'createdAt': createdAt,
+      'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
       'imageUrl': imageUrl,
       'barcode': barcode,
     };

@@ -24,6 +24,8 @@ class CustomerEntityAdapter extends TypeAdapter<CustomerEntity> {
       totalCredit: fields[4] as double,
       lastTransactionDate: fields[5] as DateTime,
       createdAt: fields[6] as DateTime,
+      updatedAt: fields[8] as DateTime?,
+      isSynced: fields[9] as bool,
       notes: fields[7] as String?,
     );
   }
@@ -31,7 +33,7 @@ class CustomerEntityAdapter extends TypeAdapter<CustomerEntity> {
   @override
   void write(BinaryWriter writer, CustomerEntity obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +49,11 @@ class CustomerEntityAdapter extends TypeAdapter<CustomerEntity> {
       ..writeByte(6)
       ..write(obj.createdAt)
       ..writeByte(7)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(8)
+      ..write(obj.updatedAt)
+      ..writeByte(9)
+      ..write(obj.isSynced);
   }
 
   @override

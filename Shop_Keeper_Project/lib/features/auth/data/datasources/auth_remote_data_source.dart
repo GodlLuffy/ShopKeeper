@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shop_keeper_project/features/auth/data/models/user_model.dart';
@@ -13,23 +12,21 @@ abstract class AuthRemoteDataSource {
   Future<UserModel?> getCurrentUser();
   Future<void> updateProfile(UserModel user);
   Future<void> sendPasswordResetEmail(String email);
+  Future<void> sendEmailVerification();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final FirebaseAuth? firebaseAuth;
-  final FirebaseFirestore? firestore;
+  final FirebaseAuth firebaseAuth;
+  final FirebaseFirestore firestore;
 
   AuthRemoteDataSourceImpl({
-    this.firebaseAuth,
-    this.firestore,
+    required this.firebaseAuth,
+    required this.firestore,
   });
 
   @override
   Future<UserModel> loginWithEmail(String email, String password) async {
-    if (firebaseAuth == null) {
-      return const UserModel(uid: 'demo_user', name: 'Anup', shopName: 'Anup Store', phoneNumber: '', email: 'gundelwaranup119@gmail.com');
-    }
-    final result = await firebaseAuth!.signInWithEmailAndPassword(
+    final result = await firebaseAuth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -38,11 +35,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> loginWithPhone(String phoneNumber) async {
-    if (firebaseAuth == null) return 'demo_id';
-    
     final completer = Completer<String>();
     
-    await firebaseAuth!.verifyPhoneNumber(
+    await firebaseAuth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) {
         // This can automatically sign in on some devices
@@ -65,41 +60,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserModel> verifyOtp(String verificationId, String smsCode) async {
-    if (firebaseAuth == null) {
-      return const UserModel(uid: 'demo_user', name: 'Anup', shopName: 'Anup Store', phoneNumber: '', email: 'gundelwaranup119@gmail.com');
-    }
     final credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
       smsCode: smsCode,
     );
-    final result = await firebaseAuth!.signInWithCredential(credential);
+    final result = await firebaseAuth.signInWithCredential(credential);
     return _getUserFromFirestore(result.user!.uid);
   }
 
   @override
   Future<UserModel> register(String name, String email, String password, String shopName) async {
-    if (firebaseAuth == null) {
-      return UserModel(
-        uid: 'demo_user', 
-        name: name.isEmpty ? 'Anup' : name, 
-        shopName: shopName.isEmpty ? 'Anup Store' : shopName, 
-        phoneNumber: '', 
-        email: email.isEmpty ? 'gundelwaranup119@gmail.com' : email
-      );
-    }
-
     try {
-      final result = await firebaseAuth!.createUserWithEmailAndPassword(
+      final result = await firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      // Attempt to send email verification, but don't fail the whole registration if it fails
-      try {
-        await result.user!.sendEmailVerification();
-      } catch (e) {
-        debugPrint('Email verification sending failed (skipping): $e');
-      }
+      await result.user!.sendEmailVerification();
       
       final newUser = UserModel(
         uid: result.user!.uid,
@@ -107,15 +84,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         shopName: shopName,
         phoneNumber: '',
         email: email,
+        isEmailVerified: false,
+        createdAt: DateTime.now(),
       );
       
-      if (firestore != null) {
-        await firestore!.collection('users').doc(newUser.uid).set(newUser.toMap());
-      }
+      await firestore.collection('users').doc(newUser.uid).set(newUser.toMap());
       
       return newUser;
     } on FirebaseAuthException catch (e) {
-      // Re-throw with descriptive messages for the repository to catch
       switch (e.code) {
         case 'email-already-in-use':
           throw Exception('The email address is already in use by another account.');
@@ -135,15 +111,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> logout() async {
-    if (firebaseAuth != null) await firebaseAuth!.signOut();
+    await firebaseAuth.signOut();
   }
 
   @override
   Future<UserModel?> getCurrentUser() async {
-    if (firebaseAuth == null) {
-      return const UserModel(uid: 'demo_user', name: 'Anup', shopName: 'Anup Store', phoneNumber: '', email: 'gundelwaranup119@gmail.com');
-    }
-    final user = firebaseAuth!.currentUser;
+    final user = firebaseAuth.currentUser;
     if (user != null) {
       return _getUserFromFirestore(user.uid);
     }
@@ -152,33 +125,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> updateProfile(UserModel user) async {
-    if (firebaseAuth == null || firestore == null) return;
-    await firestore!.collection('users').doc(user.uid).update(user.toMap());
+    await firestore.collection('users').doc(user.uid).update(user.toMap());
   }
 
   @override
   Future<void> sendPasswordResetEmail(String email) async {
-    if (firebaseAuth != null) {
-      await firebaseAuth!.sendPasswordResetEmail(email: email);
-    }
+    await firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    await firebaseAuth.currentUser?.sendEmailVerification();
   }
 
   Future<UserModel> _getUserFromFirestore(String uid) async {
-    if (firestore == null) {
-      return UserModel(uid: uid, name: 'Anup', shopName: 'Anup Store', phoneNumber: '', email: 'gundelwaranup119@gmail.com');
-    }
-    final doc = await firestore!.collection('users').doc(uid).get();
+    final doc = await firestore.collection('users').doc(uid).get();
     if (doc.exists) {
-      return UserModel.fromMap(doc.data()!, uid);
+      return UserModel.fromMap(doc.data()!, doc.id);
     } else {
       final defaultUser = UserModel(
         uid: uid,
         name: 'Shopkeeper',
         shopName: 'My Shop',
-        phoneNumber: firebaseAuth?.currentUser?.phoneNumber ?? '',
-        email: firebaseAuth?.currentUser?.email ?? '',
+        phoneNumber: firebaseAuth.currentUser?.phoneNumber ?? '',
+        email: firebaseAuth.currentUser?.email ?? '',
+        isEmailVerified: firebaseAuth.currentUser?.emailVerified ?? false,
+        createdAt: DateTime.now(),
       );
-      await firestore!.collection('users').doc(uid).set(defaultUser.toMap());
+      await firestore.collection('users').doc(uid).set(defaultUser.toMap());
       return defaultUser;
     }
   }

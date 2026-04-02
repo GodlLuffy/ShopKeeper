@@ -26,7 +26,7 @@ class LocalImageService {
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Crop Product Image',
-          toolbarColor: AppTheme.primaryColor,
+          toolbarColor: AppTheme.primaryIndigo,
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.square,
           lockAspectRatio: true,

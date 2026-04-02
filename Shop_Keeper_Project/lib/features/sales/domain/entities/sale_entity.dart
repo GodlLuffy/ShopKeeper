@@ -12,6 +12,7 @@ class SaleEntity extends Equatable {
   final double totalProfit;
   final DateTime date;
   final String userId;
+  final DateTime? updatedAt;
 
   const SaleEntity({
     required this.id,
@@ -23,12 +24,39 @@ class SaleEntity extends Equatable {
     required this.totalProfit,
     required this.date,
     required this.userId,
+    this.updatedAt,
   });
 
   @override
   List<Object?> get props => [
-    id, productId, productName, quantitySold, salePrice, totalAmount, totalProfit, date, userId
+    id, productId, productName, quantitySold, salePrice, totalAmount, totalProfit, date, userId, updatedAt
   ];
+
+  SaleEntity copyWith({
+    String? id,
+    String? productId,
+    String? productName,
+    int? quantitySold,
+    double? salePrice,
+    double? totalAmount,
+    double? totalProfit,
+    DateTime? date,
+    String? userId,
+    DateTime? updatedAt,
+  }) {
+    return SaleEntity(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      quantitySold: quantitySold ?? this.quantitySold,
+      salePrice: salePrice ?? this.salePrice,
+      totalAmount: totalAmount ?? this.totalAmount,
+      totalProfit: totalProfit ?? this.totalProfit,
+      date: date ?? this.date,
+      userId: userId ?? this.userId,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Either<Failure, bool> validate() {
     if (productId.isEmpty) return const Left(ValidationFailure('Product ID cannot be empty'));

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/settings/presentation/screens/profile_screen.dart';
 import 'package:shop_keeper_project/features/settings/presentation/screens/about_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/pin_setup_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shop_keeper_project/services/sync_service.dart';
+import 'package:shop_keeper_project/core/services/sync_engine.dart';
+import 'package:shop_keeper_project/features/settings/presentation/screens/sync_status_dashboard.dart';
+import 'package:shop_keeper_project/features/settings/presentation/screens/conflict_resolution_screen.dart';
 import 'package:shop_keeper_project/injection_container.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
@@ -15,6 +18,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shop_keeper_project/features/settings/presentation/bloc/settings_cubit.dart';
 import 'package:shop_keeper_project/core/utils/app_error_handler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
+import 'package:shop_keeper_project/features/customers/presentation/bloc/customer_cubit.dart';
+import 'package:shop_keeper_project/features/expenses/presentation/bloc/expenses_cubit.dart';
+import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -148,13 +156,49 @@ class SettingsScreen extends StatelessWidget {
               subtitle: AppStrings.get('sync_hint'),
               onTap: () async {
                 try {
-                  await sl<SyncService>().syncAll();
+                  await sl<SyncEngine>().syncAll();
                   if (context.mounted) {
                     AppErrorHandler.showSuccess(context, AppStrings.get('success'));
                   }
                 } catch (_) {}
               },
             ).animate().fadeIn(duration: 200.ms, delay: 350.ms),
+            
+            StreamBuilder<SyncStatus>(
+              stream: sl<SyncEngine>().statusStream,
+              builder: (context, _) {
+                final syncEngine = sl<SyncEngine>();
+                final pendingCount = syncEngine.pendingCount;
+                final conflictCount = syncEngine.conflictCount;
+                
+                return Column(
+                  children: [
+                    _buildSettingsTile(
+                      context,
+                      icon: Icons.track_changes_rounded,
+                      title: 'Sync Dashboard',
+                      subtitle: 'Monitor pending cloud updates',
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(color: AppTheme.primaryOrchid.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                        child: Text('$pendingCount', style: const TextStyle(color: AppTheme.primaryOrchid, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncStatusDashboard())),
+                    ).animate().fadeIn(duration: 200.ms, delay: 375.ms),
+
+                    if (conflictCount > 0)
+                      _buildSettingsTile(
+                        context,
+                        icon: Icons.warning_amber_rounded,
+                        title: 'Resolution Center',
+                        subtitle: 'Fix $conflictCount data conflicts',
+                        color: AppTheme.warningAmber,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConflictResolutionScreen())),
+                      ).animate().fadeIn(duration: 200.ms, delay: 380.ms),
+                  ],
+                );
+              }
+            ),
             _buildSettingsTile(
               context,
               icon: Icons.cleaning_services_rounded,
@@ -163,6 +207,14 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => _showClearCacheDialog(context),
               color: AppTheme.warningAmber,
             ).animate().fadeIn(duration: 200.ms, delay: 400.ms),
+            _buildSettingsTile(
+              context,
+              icon: Icons.backup_rounded,
+              title: 'Backup Data',
+              subtitle: 'Export all data as CSV',
+              onTap: () => _exportAllData(context),
+              color: AppTheme.successEmerald,
+            ).animate().fadeIn(duration: 200.ms, delay: 450.ms),
 
             const SizedBox(height: 32),
             _buildSectionTitle(context, AppStrings.get('labs_info')),
@@ -350,6 +402,88 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _exportAllData(BuildContext context) async {
+    final buffer = StringBuffer();
+    final now = DateTime.now();
+
+    buffer.writeln('═══════════════════════════════════════');
+    buffer.writeln('       SHOPKEEPER DATA BACKUP');
+    buffer.writeln('═══════════════════════════════════════');
+    buffer.writeln('Generated: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}');
+    buffer.writeln('');
+
+    final invState = context.read<InventoryCubit>().state;
+    if (invState is InventoryLoaded) {
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('PRODUCTS (${invState.products.length})');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Name,Category,Buy Price,Sell Price,Stock,Min Alert,Barcode');
+      for (final p in invState.products) {
+        buffer.writeln('"${p.name}","${p.category}",${p.buyPrice},${p.sellPrice},${p.stockQuantity},${p.minStockAlert},"${p.barcode ?? ''}"');
+      }
+      buffer.writeln('');
+    }
+
+    final custState = context.read<CustomerCubit>().state;
+    if (custState is CustomerLoaded) {
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('CUSTOMERS (${custState.customers.length})');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Name,Phone,Credit Balance,Notes');
+      for (final c in custState.customers) {
+        buffer.writeln('"${c.name}","${c.phone}",${c.totalCredit},"${c.notes ?? ''}"');
+      }
+      buffer.writeln('');
+    }
+
+    final expState = context.read<ExpensesCubit>().state;
+    if (expState is ExpensesLoaded) {
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('EXPENSES (${expState.expenses.length})');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Date,Title,Category,Amount');
+      for (final e in expState.expenses) {
+        buffer.writeln('${DateFormat('yyyy-MM-dd').format(e.date)},"${e.title}","${e.category}",${e.amount}');
+      }
+      buffer.writeln('');
+    }
+
+    final salesState = context.read<SalesCubit>().state;
+    if (salesState is SalesLoaded) {
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('SALES (${salesState.sales.length})');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Date,Product,Qty,Price,Total,Profit');
+      for (final s in salesState.sales) {
+        buffer.writeln('${DateFormat('yyyy-MM-dd').format(s.date)},"${s.productName}",${s.quantitySold},${s.salePrice},${s.totalAmount},${s.totalProfit}');
+      }
+      buffer.writeln('');
+    }
+
+    buffer.writeln('═══════════════════════════════════════');
+    buffer.writeln('        END OF BACKUP');
+    buffer.writeln('═══════════════════════════════════════');
+
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Text('Full backup copied to clipboard!', style: TextStyle(fontWeight: FontWeight.w600)),
+            ],
+          ),
+          backgroundColor: AppTheme.successEmerald,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
   void _showLogoutDialog(BuildContext context) {
     final theme = Theme.of(context);
     showDialog(
@@ -393,20 +527,37 @@ class SettingsScreen extends StatelessWidget {
     Color? color,
   }) {
     final theme = Theme.of(context);
-    return GlassCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: (color ?? AppTheme.primaryIndigo).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, color: color ?? AppTheme.primaryIndigo, size: 22),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.premiumShadow,
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.05)),
+      ),
+      child: GlassCard(
+        child: ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: (color ?? AppTheme.primaryIndigo).withOpacity(0.1), 
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                 BoxShadow(color: (color ?? AppTheme.primaryIndigo).withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))
+              ]
+            ),
+            child: Icon(icon, color: color ?? AppTheme.primaryIndigo, size: 24),
+          ),
+          title: Text(title, style: TextStyle(fontWeight: FontWeight.w800, color: color ?? theme.colorScheme.onSurface, fontSize: 16, letterSpacing: -0.5)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(subtitle, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+          ),
+          trailing: trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          onTap: onTap,
         ),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w700, color: color ?? theme.colorScheme.onSurface, fontSize: 15)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
-        trailing: trailing ?? Icon(Icons.chevron_right_rounded, size: 20, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3)),
-        onTap: onTap,
       ),
     );
   }

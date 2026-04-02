@@ -1,258 +1,292 @@
-# PROJECT_RULES.md — GSD Canonical Rules
+You are a **Senior Flutter + Firebase Staff Engineer** working on my production app **ShopKeeper**.
 
-> **Single Source of Truth** for the Get Shit Done methodology.
-> 
-> Model-agnostic. All adapters and extensions reference this file.
+Your mission is to perform a **deep full-project audit and upgrade**.
 
----
-
-## Core Protocol
-
-**SPEC → PLAN → EXECUTE → VERIFY → COMMIT**
-
-1. **SPEC**: Define requirements in `.gsd/SPEC.md` until status is `FINALIZED`
-2. **PLAN**: Decompose into phases in `.gsd/ROADMAP.md`, then detailed plans
-3. **EXECUTE**: Implement with atomic commits per task
-4. **VERIFY**: Prove completion with empirical evidence
-5. **COMMIT**: One task = one commit, message format: `type(scope): description`
-
-**Planning Lock**: No implementation code until SPEC.md contains "Status: FINALIZED".
+Project Repo:
+https://github.com/GodlLuffy/ShopKeeper
 
 ---
 
-## Proof Requirements
+# 🎯 PRIMARY OBJECTIVE
 
-Every change requires verification evidence:
+Transform this project into a **production-ready premium inventory + billing + analytics app** with **perfect Firebase architecture, secure authentication, and flawless database sync**.
 
-| Change Type | Required Proof |
-|-------------|----------------|
-| API endpoint | curl/HTTP response |
-| UI change | Screenshot |
-| Build/compile | Command output |
-| Test | Test runner output |
-| Config | Verification command |
-
-**Never accept**: "It looks correct", "This should work", "I've done similar before".
-
-**Always require**: Captured output, screenshot, or test result.
+You must work like a **10+ years senior mobile architect**.
 
 ---
 
-## Search-First Discipline
+# 🔍 STEP 1 — FULL PROJECT INSPECTION
 
-**Before reading any file completely:**
+First deeply inspect:
 
-1. **Search first** — Use grep, ripgrep, or IDE search to find relevant snippets
-2. **Evaluate snippets** — Determine if full file read is justified
-3. **Targeted reads** — Only read specific line ranges when needed
+* all pages
+* all routes
+* all widgets
+* all providers / bloc / riverpod / state logic
+* Firebase setup
+* Firestore collections
+* Hive local database
+* auth flow
+* login flow
+* PIN security
+* invoice flow
+* stock update flow
+* charts and analytics
+* product CRUD
+* sales history
+* customer debt tracking
+* billing print logic
+* app startup flow
+* splash screen
+* navigation structure
+* reusable components
+* error handling
+* API integrations
+* offline sync
+* cloud sync conflicts
 
-**Benefits:**
-- Reduces context pollution
-- Faster understanding of large codebases
-- Prevents reading irrelevant code
+Find:
 
-**Anti-pattern**: Reading entire files "to understand the context" without searching first.
-
----
-
-## Wave Execution
-
-Plans are grouped into **waves** based on dependencies:
-
-| Wave | Characteristic | Execution |
-|------|----------------|-----------|
-| 1 | Foundation tasks, no dependencies | Run in parallel |
-| 2 | Depends on Wave 1 | Wait for Wave 1, then parallel |
-| 3 | Depends on Wave 2 | Wait for Wave 2, then parallel |
-
-**Wave Completion Protocol:**
-1. All tasks in wave verified
-2. State snapshot created
-3. Commit all wave work
-4. Update STATE.md with position
-
----
-
-## State Snapshots
-
-At the end of each wave or significant work block, create a state snapshot:
-
-```markdown
-## Wave N Summary
-
-**Objective:** {what this wave aimed to accomplish}
-
-**Changes:**
-- {change 1}
-- {change 2}
-
-**Files Touched:**
-- {file1}
-- {file2}
-
-**Verification:**
-- {command}: {result}
-
-**Risks/Debt:**
-- {any concerns}
-
-**Next Wave TODO:**
-- {item 1}
-- {item 2}
-```
+* dead code
+* broken database calls
+* half-connected UI
+* missing awaits
+* wrong async state updates
+* null safety issues
+* Firestore read/write bugs
+* duplicated logic
+* page performance issues
+* unoptimized rebuilds
+* bad folder structure
 
 ---
 
-## Model Independence
+# 🏗️ STEP 2 — REBUILD TO SENIOR ARCHITECTURE
 
-**Absolute Rule**: No rule, workflow, or skill may require a specific model provider.
+Refactor into this structure:
 
-**Allowed:**
-- Optional adapters with provider-specific enhancements
-- Capability-based recommendations (e.g., "use a reasoning model for planning")
-- Examples mentioning specific models as illustrations
+lib/
+core/
+constants/
+theme/
+services/
+utils/
+models/
+repositories/
+features/
+auth/
+inventory/
+billing/
+analytics/
+customers/
+settings/
+widgets/
 
-**Forbidden:**
-- Hard dependencies on provider features
-- Breaking behavior when a specific model is unavailable
-- Duplicating canonical rules in adapters
+Use:
 
-**Adapter Pattern:**
-```
-adapters/
-├── CLAUDE.md    # Optional Claude enhancements
-├── GEMINI.md    # Optional Gemini enhancements
-└── GPT_OSS.md   # Optional GPT/OSS enhancements
-```
-
-Each adapter must begin with:
-> "Everything in this file is optional. For canonical rules, see PROJECT_RULES.md."
-
----
-
-## Commit Conventions
-
-**Format:**
-```
-type(scope): description
-```
-
-**Types:**
-| Type | Usage |
-|------|-------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `refactor` | Code restructure (no behavior change) |
-| `test` | Adding/updating tests |
-| `chore` | Maintenance, dependencies |
-
-**Rules:**
-- One task = one commit
-- Verify before commit
-- Scope = phase number for phase work (e.g., `feat(phase-1): ...`)
+* feature-first architecture
+* repository pattern
+* service layer
+* Firebase abstraction
+* clean separation of UI/business/data
+* reusable widgets
+* scalable routing
 
 ---
 
-## Repository Structure
+# 🔥 STEP 3 — FIREBASE AUTH SYSTEM
 
-```
-PROJECT_RULES.md          # ← This file (canonical rules)
-GSD-STYLE.md              # Style and conventions
+Implement full auth module:
 
-.agent/
-├── workflows/            # Slash commands (/plan, /execute, etc.)
-└── skills/               # Agent specializations
+## Required
 
-.gemini/                  # Gemini-specific configuration
-.gsd/                     # Project state and artifacts
-├── SPEC.md               # Requirements (must be FINALIZED)
-├── ROADMAP.md            # Phases and progress
-├── STATE.md              # Session memory
-├── templates/            # Document templates
-└── examples/             # Usage examples
+* Email + Password Sign Up
+* Login
+* Logout
+* Verify Email
+* Forgot Password
+* Reset Password
+* Session persistence
+* Auth state listener
+* Secure route guard
+* Auto redirect if email not verified
+* Resend verification email
+* nice loading + error UI
 
-adapters/                 # Optional model-specific enhancements
-docs/                     # Operational documentation
-scripts/                  # Utility scripts
-```
+### Flow Rules
 
----
+* user cannot access dashboard without verified email
+* on signup send verification email automatically
+* on login check FirebaseAuth.instance.currentUser.emailVerified
+* if false → redirect verify email screen
+* if true → dashboard
 
-## Context Management
+Build:
 
-**Context Quality Thresholds:**
-
-| Usage | Quality |
-|-------|---------|
-| 0-30% | **PEAK** — Comprehensive, thorough work |
-| 30-50% | **GOOD** — Solid, confident output |
-| 50-70% | **DEGRADING** — Efficiency mode |
-| 70%+ | **POOR** — Rushed, incomplete |
-
-**Context Hygiene Rules:**
-- Keep plans under 50% context usage
-- Fresh context for each plan execution
-- After 3 debugging failures → state dump → fresh session
-- STATE.md = memory across sessions
+* LoginPage
+* SignupPage
+* VerifyEmailPage
+* ForgotPasswordPage
+* ResetSuccessPage
 
 ---
 
-## Token Efficiency Rules
+# ☁️ STEP 4 — FIRESTORE DATABASE PERFECT STRUCTURE
 
-**Goal:** Minimize token consumption while maintaining output quality.
+Create professional scalable Firestore schema:
 
-### Loading Rules
+users/{uid}
 
-| Action | Rule |
-|--------|------|
-| Before reading file | Search first (grep, ripgrep) |
-| File >200 lines | Use outline, not full file |
-| File already understood | Reference summary, don't reload |
-| >5 files needed | Stop, reconsider approach |
+* name
+* email
+* createdAt
+* shopName
+* phone
+* role
+* subscriptionPlan
 
-### Budget Thresholds
+shops/{shopId}
 
-| Usage | Action Required |
-|-------|-----------------|
-| 0-50% | Proceed normally |
-| 50-70% | Switch to outline mode, compress context |
-| 70%+ | State dump required, recommend fresh session |
+* ownerId
+* createdAt
+* settings
 
-### Compression Protocol
+products/{productId}
 
-After understanding a file:
-1. Create summary in STATE.md or task notes
-2. Reference summary instead of re-reading
-3. Only reload specific sections if needed
+* name
+* barcode
+* price
+* stock
+* costPrice
+* category
+* updatedAt
 
-### Per-Wave Efficiency
+sales/{saleId}
 
-- Start each wave with minimal context
-- Load files just-in-time (when task requires)
-- Compress/summarize before moving to next wave
-- Document token usage in state snapshots (optional)
+* productIds
+* totalAmount
+* paymentMode
+* customerId
+* createdAt
 
-**Anti-patterns:**
-- Loading files "just in case"
-- Re-reading files already understood
-- Full file reads when snippets suffice
-- Ignoring budget warnings
+customers/{customerId}
+
+* name
+* phone
+* debt
+* updatedAt
+
+analytics/{dayId}
+
+* revenue
+* expenses
+* profit
+* itemsSold
+
+Make all collections strongly typed with Dart models.
 
 ---
 
-## Quick Reference
+# 🔄 STEP 5 — FRONTEND ↔ BACKEND VALIDATION
 
-```
-Before coding    → SPEC.md must be FINALIZED
-Before file read → Search first, then targeted read
-After each task  → Commit + update STATE.md
-After each wave  → State snapshot
-After 3 failures → State dump + fresh session
-Before "Done"    → Empirical proof captured
-```
+Check every screen and verify:
+
+* is UI connected to correct collection?
+* is product stock decrementing after billing?
+* are charts reading live sales data?
+* are daily reports correct?
+* are debts updating customer records?
+* is offline Hive syncing back to Firestore?
+* are duplicate sales avoided?
+* is delete safe?
+* are failed writes retried?
+
+Fix all broken connections.
 
 ---
 
-*GSD Methodology — Model-Agnostic Edition*
-*Reference implementation for multi-LLM environments*
+# ⚡ STEP 6 — HIVE + FIREBASE HYBRID DATABASE
+
+Implement offline-first sync:
+
+## Local
+
+Hive stores:
+
+* products
+* pending sales
+* cached analytics
+* customer debts
+
+## Cloud
+
+Firestore sync engine:
+
+* push pending local changes
+* resolve conflicts using updatedAt
+* auto retry failed sync
+* background sync on app resume
+* sync status badge
+
+---
+
+# 🎨 STEP 7 — PREMIUM UX UPGRADE
+
+Upgrade all auth + dashboard UI to premium fintech level:
+
+Style reference:
+
+* PhonePe
+* Razorpay
+* CRED
+* Notion dark elegance
+
+Requirements:
+
+* glass cards
+* smooth charts
+* animated KPI counters
+* premium PIN lock
+* shimmer loading
+* success micro animations
+* zero ugly dialogs
+* snackbar system
+* consistent spacing
+* reusable buttons
+* input validation states
+
+---
+
+# 🧪 STEP 8 — FULL QA CHECK
+
+Run deep code validation:
+
+* no broken imports
+* no unused code
+* no duplicate widgets
+* no context after await issue
+* no memory leaks
+* no stream leaks
+* no unsafe setState
+* all firebase exceptions handled
+* all Firestore indexes validated
+* all forms validated
+* all routes protected
+* all CRUD tested
+
+---
+
+# 🚀 FINAL OUTPUT FORMAT
+
+Return:
+
+1. Full audit report
+2. Found issues list
+3. Updated folder structure
+4. Firebase auth implementation
+5. Firestore schema
+6. fixed pages list
+7. sync engine logic
+8. production-ready code patches
+9. migration steps
+10. launch checklist

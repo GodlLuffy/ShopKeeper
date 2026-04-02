@@ -4,7 +4,7 @@ import 'package:shop_keeper_project/database/tables/sale_table.dart';
 abstract class SalesLocalDataSource {
   Future<List<SaleTable>> getSalesByDate(DateTime date);
   Future<void> saveSale(SaleTable sale);
-  Future<double> getTodaySalesSummary();
+  Future<Map<String, dynamic>> getTodaySalesAggregate();
 }
 
 class SalesLocalDataSourceImpl implements SalesLocalDataSource {
@@ -27,9 +27,22 @@ class SalesLocalDataSourceImpl implements SalesLocalDataSource {
   }
 
   @override
-  Future<double> getTodaySalesSummary() async {
+  Future<Map<String, dynamic>> getTodaySalesAggregate() async {
     final today = DateTime.now();
     final todaySalesList = await getSalesByDate(today);
-    return todaySalesList.fold<double>(0.0, (total, s) => total + s.totalAmount);
+    
+    double totalRevenue = 0.0;
+    double totalProfit = 0.0;
+    
+    for (final s in todaySalesList) {
+      totalRevenue += s.totalAmount;
+      totalProfit += s.totalProfit;
+    }
+    
+    return {
+      'revenue': totalRevenue,
+      'profit': totalProfit,
+      'count': todaySalesList.length,
+    };
   }
 }

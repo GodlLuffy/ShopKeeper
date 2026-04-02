@@ -35,6 +35,9 @@ class CreditTransactionTable extends HiveObject {
   @HiveField(9)
   final String? billId;
 
+  @HiveField(10)
+  final DateTime? updatedAt;
+
   CreditTransactionTable({
     required this.id,
     required this.customerId,
@@ -46,6 +49,7 @@ class CreditTransactionTable extends HiveObject {
     required this.balanceAfter,
     this.isSynced = false,
     this.billId,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -59,6 +63,7 @@ class CreditTransactionTable extends HiveObject {
       'date': date.toIso8601String(),
       'balanceAfter': balanceAfter,
       'billId': billId,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 }

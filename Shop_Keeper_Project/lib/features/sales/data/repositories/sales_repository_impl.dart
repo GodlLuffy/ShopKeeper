@@ -9,6 +9,8 @@ import 'package:shop_keeper_project/features/sales/domain/repositories/sales_rep
 import 'package:shop_keeper_project/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:shop_keeper_project/features/sales/domain/entities/sales_summary.dart';
+
 class SalesRepositoryImpl implements SalesRepository {
   final SalesLocalDataSource localDataSource;
   final SalesRemoteDataSource remoteDataSource;
@@ -33,10 +35,7 @@ class SalesRepositoryImpl implements SalesRepository {
   @override
   Future<Either<Failure, List<SaleEntity>>> getSalesByRange(DateTime start, DateTime end) async {
     try {
-      // For thorough offline support, we'd query local Hive.
-      // However, for Analytics, fetching latest from Remote (if online) is often desired.
-      // But let's follow the pattern: Try remote, fallback to local (not yet implemented for ranges).
-      // For now, let's just use remote if available.
+      // For now, let's use remote if available.
       final user = await localDataSource.getSalesByDate(DateTime.now()); // Need userId
       final userId = user.isNotEmpty ? user.first.userId : 'unknown';
       
@@ -68,15 +67,13 @@ class SalesRepositoryImpl implements SalesRepository {
       // 1. Save sale locally
       await localDataSource.saveSale(model.toTable(isSynced: false));
       
-      // 2. Automatically update inventory stock (Atomic if possible)
+      // 2. Automatically update inventory stock
       final stockResult = await inventoryRepository.updateStock(
         sale.productId, 
         -sale.quantitySold, 
         'SALE',
       );
 
-      // If stock update fails (e.g. insufficient), we should throw 
-      // but Repository usually doesn't throw. Fold the result.
       return stockResult.fold(
         (failure) => Left(failure),
         (_) {
@@ -90,10 +87,14 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  Future<Either<Failure, double>> getTodaySalesSummary() async {
+  Future<Either<Failure, SalesSummary>> getTodaySalesSummary() async {
     try {
-      final total = await localDataSource.getTodaySalesSummary();
-      return Right(total);
+      final aggregate = await localDataSource.getTodaySalesAggregate();
+      return Right(SalesSummary(
+        totalRevenue: aggregate['revenue'] ?? 0.0,
+        totalProfit: aggregate['profit'] ?? 0.0,
+        orderCount: aggregate['count'] ?? 0,
+      ));
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }

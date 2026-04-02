@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.5] - 2026-04-02
+
+### 🌌 Added (Cyber Orchid Era)
+- **Cyber Orchid Design System** — Transitioned to a high-contrast Neon Orchid & Electric Cyan palette.
+- **💎 Glassmorphism 2.0** — Upgraded blurs (30px) and micro-borders for flagship aesthetics.
+- **📈 Sync Evolution Center** — real-time dashboard for monitoring and managing pending cloud operations.
+- **⚔️ Hardened Sync Engine** — Enterprise-grade Firestore synchronization with multi-device conflict resolution.
+- **🔐 PIN Lock Resiliency** — Fixed layout overflows and stabilized biometric authentication flows.
+
+### 🛠️ Refactored
+- **Sync Architecture:** Migrated logic from legacy `SyncService` to a centralized, hardened `SyncEngine`.
+- **Global Themes:** Consolidated design tokens into a centralized `AppTheme` system.
+- **Clean Architecture:** Removed redundant services and obsolete planning files.
+
+---
+
 ## [1.0.0] - 2026-03-30
 
 ### 🚀 Added

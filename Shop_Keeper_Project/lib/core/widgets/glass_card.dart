@@ -30,7 +30,7 @@ class GlassCard extends StatelessWidget {
     final baseColor = isDark ? Colors.white : Colors.black;
     final glassColor = isDark 
         ? Colors.white.withOpacity(backgroundOpacity) 
-        : Colors.white.withOpacity(0.7); // Light mode glass is more opaque white
+        : Colors.white.withOpacity(0.4); // Light mode glass is more translucent now
 
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
@@ -38,15 +38,21 @@ class GlassCard extends StatelessWidget {
         color: glassColor,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: baseColor.withOpacity(isDark ? borderOpacity : 0.05), 
-          width: 1,
+          color: baseColor.withOpacity(isDark ? borderOpacity : 0.08), 
+          width: 0.8,
         ),
-        boxShadow: [
+        boxShadow: isDark ? [
           BoxShadow(
-            color: (isDark ? AppTheme.primaryIndigo : Colors.black).withOpacity(0.05),
+            color: AppTheme.primaryOrchid.withOpacity(0.04),
+            blurRadius: 40,
+            spreadRadius: -10,
+            offset: const Offset(0, 15),
+          )
+        ] : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 20,
-            spreadRadius: -5,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           )
         ],
       ),
@@ -60,7 +66,7 @@ class GlassCard extends StatelessWidget {
               onTap: onTap,
               borderRadius: BorderRadius.circular(borderRadius),
               highlightColor: baseColor.withOpacity(0.05),
-              splashColor: AppTheme.primaryIndigo.withOpacity(0.1),
+              splashColor: AppTheme.primaryOrchid.withOpacity(0.1),
               child: Padding(
                 padding: padding ?? const EdgeInsets.all(20),
                 child: child,

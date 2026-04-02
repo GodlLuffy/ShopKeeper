@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../model/invoice.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/core/localization/app_strings.dart';
@@ -9,6 +10,50 @@ class InvoiceDialog extends StatelessWidget {
   final Invoice invoice;
 
   const InvoiceDialog({super.key, required this.invoice});
+
+  Future<void> _shareViaWhatsApp(BuildContext context) async {
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 *SHOPKEEPER INVOICE*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    if (invoice.customerName != null && invoice.customerName!.isNotEmpty) {
+      buffer.writeln('Customer: ${invoice.customerName}');
+    }
+    buffer.writeln('Date: ${DateFormat('dd MMM yyyy, hh:mm a').format(invoice.date)}');
+    buffer.writeln('');
+    
+    for (final item in invoice.items) {
+      buffer.writeln('• ${item.product.name}');
+      buffer.writeln('  ${item.quantity} × ₹${item.product.sellPrice.toStringAsFixed(2)} = ₹${item.total.toStringAsFixed(2)}');
+    }
+    
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('Subtotal: ₹${invoice.subtotal.toStringAsFixed(2)}');
+    if (invoice.discountAmount > 0) {
+      buffer.writeln('Discount: -₹${invoice.discountAmount.toStringAsFixed(2)}');
+    }
+    buffer.writeln('GST (${(invoice.gstRate * 100).toInt()}%): ₹${invoice.gstAmount.toStringAsFixed(2)}');
+    buffer.writeln('');
+    buffer.writeln('*TOTAL: ₹${invoice.totalPayable.toStringAsFixed(2)}*');
+    if (invoice.isCreditSale) {
+      buffer.writeln('');
+      buffer.writeln('⚠️ *CREDIT SALE*');
+    }
+    buffer.writeln('');
+    buffer.writeln('Generated via ShopKeeper PRO OS 📱');
+
+    final message = Uri.encodeComponent(buffer.toString());
+    final whatsappUrl = Uri.parse('https://wa.me/?text=$message');
+
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp not installed')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,35 +246,65 @@ class InvoiceDialog extends StatelessWidget {
             // Premium Actions
             Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => InvoicePdfRenderer.shareInvoice(invoice),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppTheme.textMuted.withOpacity(0.3)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _shareViaWhatsApp(context),
                             borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.share_rounded, color: AppTheme.textWhite, size: 20),
-                              const SizedBox(width: 8),
-                              Text(AppStrings.get('share'), style: const TextStyle(color: AppTheme.textWhite, fontWeight: FontWeight.bold, fontSize: 13)),
-                            ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF25D366).withOpacity(0.15),
+                                border: Border.all(color: const Color(0xFF25D366).withOpacity(0.3)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.send_rounded, color: Color(0xFF25D366), size: 20),
+                                  SizedBox(width: 8),
+                                  Text('WhatsApp', style: TextStyle(color: Color(0xFF25D366), fontWeight: FontWeight.bold, fontSize: 13)),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => InvoicePdfRenderer.shareInvoice(invoice),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppTheme.textMuted.withOpacity(0.3)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.share_rounded, color: AppTheme.textWhite, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(AppStrings.get('share'), style: const TextStyle(color: AppTheme.textWhite, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),

@@ -12,6 +12,7 @@ class ProductEntity extends Equatable {
   final int minStockAlert;
   final String userId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final String? imageUrl;
   final String? barcode;
 
@@ -27,14 +28,45 @@ class ProductEntity extends Equatable {
     required this.minStockAlert,
     required this.userId,
     required this.createdAt,
+    this.updatedAt,
     this.imageUrl,
     this.barcode,
   });
 
   @override
   List<Object?> get props => [
-    id, name, category, buyPrice, sellPrice, stockQuantity, minStockAlert, userId, createdAt, imageUrl, barcode
+    id, name, category, buyPrice, sellPrice, stockQuantity, minStockAlert, userId, createdAt, updatedAt, imageUrl, barcode
   ];
+
+  ProductEntity copyWith({
+    String? id,
+    String? name,
+    String? category,
+    double? buyPrice,
+    double? sellPrice,
+    int? stockQuantity,
+    int? minStockAlert,
+    String? userId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? imageUrl,
+    String? barcode,
+  }) {
+    return ProductEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      buyPrice: buyPrice ?? this.buyPrice,
+      sellPrice: sellPrice ?? this.sellPrice,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      minStockAlert: minStockAlert ?? this.minStockAlert,
+      userId: userId ?? this.userId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      imageUrl: imageUrl ?? this.imageUrl,
+      barcode: barcode ?? this.barcode,
+    );
+  }
 
   Either<Failure, bool> validate() {
     if (name.isEmpty) return const Left(ValidationFailure('Product name cannot be empty'));

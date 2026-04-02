@@ -1,8 +1,8 @@
 # 🛒 ShopKeeper 
 
-> **A Premium, FinTech-Grade Inventory & Sales Management Solution**
+> **A Premium, High-Performance 'Cyber Orchid' SaaS Retail OS**
 
-ShopKeeper is a modern, high-performance Flutter application designed for retail business owners. It empowers shopkeepers with real-time insights, secure data management, and a premium user experience that rivals the best financial apps in the market.
+ShopKeeper is a modern, high-performance 'Cyber Orchid' Flutter application designed for retail business owners. It empowers shopkeepers with real-time insights, bulletproof Cloud Sync, and a premium neon-infused user experience that rivals the world's best financial platforms.
 
 ---
 
@@ -15,14 +15,16 @@ ShopKeeper is a modern, high-performance Flutter application designed for retail
 
 ### 🔐 Security & Data
 - **🛡️ FinTech Grade Security**: 4-digit PIN lock with biometric authentication (Fingerprint/FaceID) support.
-- **☁️ Cloud Sync**: Seamless real-time synchronization with Google Firebase.
-- **💾 Offline First**: Full offline capability using Hive, ensuring your business stays operational even without internet.
+- **⚔️ Hardened Cloud Sync**: Enterprise-ready real-time synchronization with Google Firebase.
+- **📈 Sync Evolution Center**: A dedicated dashboard to monitor and manage pending cloud operations in real-time.
+- **💾 Offline First (Hive)**: Full offline capability ensuring zero-latency operations without internet.
 
 ### 🎨 Premium UI/UX
-- **✨ Glassmorphism Design**: Elegant UI components with subtle transparency and blur effects.
+- **🌌 Cyber Orchid Theme**: Our signature high-contrast Neon Orchid & Electric Cyan palette on Midnight Black backgrounds.
+- **💎 Glassmorphism 2.0**: Advanced 30px backdrop blurs and luminous micro-borders for a flagship experience.
 - **📦 Smart Inventory**: Barcode/QR code support for fast product entry and stock management.
 - **🏠 Profile Management**: Dedicated Shop Profile section to manage store identity and owner details.
-- **📱 Responsive Layouts**: Perfectly optimized for various screen sizes with smooth micro-animations.
+- **📱 Responsive Layouts**: Perfectly optimized for mobile, tablet, and desktop.
 
 ---
 

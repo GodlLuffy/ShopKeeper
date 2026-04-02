@@ -25,6 +25,9 @@ class ExpenseTable extends HiveObject {
   @HiveField(6)
   final bool isSynced;
 
+  @HiveField(7)
+  final DateTime? updatedAt;
+
   ExpenseTable({
     required this.id,
     required this.title,
@@ -32,6 +35,7 @@ class ExpenseTable extends HiveObject {
     required this.category,
     required this.date,
     required this.userId,
+    this.updatedAt,
     this.isSynced = false,
   });
 
@@ -43,6 +47,7 @@ class ExpenseTable extends HiveObject {
       'category': category,
       'date': date.toIso8601String(),
       'userId': userId,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 }

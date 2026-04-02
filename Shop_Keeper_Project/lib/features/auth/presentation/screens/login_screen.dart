@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -16,11 +17,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isPhoneLogin = true;
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: AppTheme.lightBackgroundMain,
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
@@ -39,6 +41,44 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         },
         builder: (context, state) {
+          if (state is PasswordResetSent) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppTheme.successEmerald.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded, size: 48, color: AppTheme.successEmerald),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Reset Link Sent!',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Check your email for password reset instructions',
+                    style: TextStyle(color: AppTheme.textDarkGrey),
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () => context.read<AuthCubit>().checkAuth(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryIndigo,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    ),
+                    child: const Text('Back to Login'),
+                  ),
+                ],
+              ),
+            );
+          }
           return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
@@ -48,14 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     width: 100,
                     height: 100,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
                         colors: [Color(0xFF3B1A7A), Color(0xFF5F259F)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [BoxShadow(color: const Color(0xFF3B1A7A).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: const Icon(Icons.storefront_rounded, size: 48, color: Colors.white),
                   ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
@@ -64,14 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const Text(
                     'ShopKeeper PRO',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), letterSpacing: -0.5),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textBlack, letterSpacing: -0.5),
                   ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
                   
                   const SizedBox(height: 8),
                   
                   const Text(
                     'Sign in to manage your retail business',
-                    style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 15, color: AppTheme.textDarkGrey),
                     textAlign: TextAlign.center,
                   ).animate().fade(delay: 300.ms).slideY(begin: 0.2),
                   
@@ -156,7 +194,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: 'Password',
                             hint: '••••••••',
                             icon: Icons.lock_rounded,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: const Color(0xFF94A3B8), size: 22),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Align(
@@ -215,8 +257,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 32),
                   
                   TextButton(
-                    onPressed: () => context.push('/register'),
-                    child: const Text('New Shop? Create Account', style: TextStyle(color: Color(0xFF5F259F), fontWeight: FontWeight.bold, fontSize: 15)),
+                    onPressed: () => context.go('/register'),
+                    child: const Text('New Shop? Create Account', style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold, fontSize: 16)),
                   ).animate().fade(delay: 500.ms),
                 ],
               ),
@@ -234,6 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required IconData icon,
     bool obscureText = false,
     TextInputType? keyboardType,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,6 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
             hintText: hint,
             hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.normal),
             prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 22),
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),

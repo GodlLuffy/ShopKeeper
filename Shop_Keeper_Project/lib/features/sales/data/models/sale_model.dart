@@ -13,6 +13,7 @@ class SaleModel extends SaleEntity {
     required super.totalProfit,
     required super.date,
     required super.userId,
+    super.updatedAt,
   });
 
   factory SaleModel.fromTable(SaleTable table) {
@@ -26,6 +27,7 @@ class SaleModel extends SaleEntity {
       totalProfit: table.totalProfit,
       date: table.date,
       userId: table.userId,
+      updatedAt: table.updatedAt,
     );
   }
 
@@ -40,6 +42,7 @@ class SaleModel extends SaleEntity {
       totalProfit: totalProfit,
       date: date,
       userId: userId,
+      updatedAt: updatedAt,
       isSynced: isSynced,
     );
   }
@@ -55,6 +58,7 @@ class SaleModel extends SaleEntity {
       totalProfit: (map['totalProfit'] ?? 0).toDouble(),
       date: (map['date'] as Timestamp).toDate(),
       userId: map['userId'] ?? '',
+      updatedAt: map['updatedAt'] != null ? (map['updatedAt'] as Timestamp).toDate() : null,
     );
   }
 
@@ -68,6 +72,7 @@ class SaleModel extends SaleEntity {
       'totalProfit': totalProfit,
       'date': date,
       'userId': userId,
+      'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
     };
   }
 }

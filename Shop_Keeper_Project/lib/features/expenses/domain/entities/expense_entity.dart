@@ -10,6 +10,8 @@ class ExpenseEntity extends Equatable {
   final DateTime date;
   final String userId;
 
+  final DateTime? updatedAt;
+
   const ExpenseEntity({
     required this.id,
     required this.title,
@@ -17,10 +19,31 @@ class ExpenseEntity extends Equatable {
     required this.category,
     required this.date,
     required this.userId,
+    this.updatedAt,
   });
 
   @override
-  List<Object?> get props => [id, title, amount, category, date, userId];
+  List<Object?> get props => [id, title, amount, category, date, userId, updatedAt];
+
+  ExpenseEntity copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    String? category,
+    DateTime? date,
+    String? userId,
+    DateTime? updatedAt,
+  }) {
+    return ExpenseEntity(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      userId: userId ?? this.userId,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Either<Failure, bool> validate() {
     if (title.isEmpty) return const Left(ValidationFailure('Expense title cannot be empty'));

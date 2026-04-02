@@ -70,8 +70,43 @@ class InventoryCubit extends Cubit<InventoryState> {
   Future<ProductEntity?> getProductByBarcode(String barcode) async {
     final result = await getProductByBarcodeUseCase(barcode);
     return result.fold(
-      (failure) => null, // Or handle error
+      (failure) => null,
       (product) => product,
     );
+  }
+
+  List<ProductEntity> get lowStockProducts {
+    if (state is! InventoryLoaded) return [];
+    return (state as InventoryLoaded).products
+        .where((p) => p.stockQuantity > 0 && p.stockQuantity <= p.minStockAlert)
+        .toList();
+  }
+
+  List<ProductEntity> get outOfStockProducts {
+    if (state is! InventoryLoaded) return [];
+    return (state as InventoryLoaded).products
+        .where((p) => p.stockQuantity <= 0)
+        .toList();
+  }
+
+  List<ProductEntity> get allLowStockProducts {
+    return [...outOfStockProducts, ...lowStockProducts];
+  }
+
+  Map<String, int> calculateRestockQuantities({int suggestedStock = 50}) {
+    final restockMap = <String, int>{};
+    for (final product in allLowStockProducts) {
+      restockMap[product.id] = suggestedStock - product.stockQuantity;
+    }
+    return restockMap;
+  }
+
+  double getTotalRestockValue({int suggestedStock = 50}) {
+    double total = 0;
+    for (final product in allLowStockProducts) {
+      final qtyNeeded = suggestedStock - product.stockQuantity;
+      total += qtyNeeded * product.buyPrice;
+    }
+    return total;
   }
 }

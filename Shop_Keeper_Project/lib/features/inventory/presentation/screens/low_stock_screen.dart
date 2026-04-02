@@ -24,7 +24,7 @@ class LowStockScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final product = lowStockItems[index];
                 return Card(
-                  color: AppTheme.errorColor.withOpacity(0.05),
+                  color: AppTheme.dangerRose.withOpacity(0.05),
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -32,7 +32,7 @@ class LowStockScreen extends StatelessWidget {
                     trailing: ElevatedButton(
                       onPressed: () => context.push('/inventory/edit/${product.id}'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppTheme.primaryIndigo,
                         minimumSize: const Size(80, 40),
                       ),
                       child: const Text('Restock', style: TextStyle(fontSize: 14)),

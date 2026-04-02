@@ -3,26 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms of Service | ShopKeeper</title>
+    <title>Terms of Service | ShopKeeper PRO</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
-        h1 { color: #059669; border-bottom: 2px solid #059669; padding-bottom: 10px; }
-        h2 { margin-top: 30px; color: #111; }
-        footer { margin-top: 50px; font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
+        :root {
+            --primary: #5D5FEF;
+            --secondary: #00E5FF;
+            --bg: #0E0F14;
+            --text: #E0E0E0;
+            --text-muted: #94A3B8;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            line-height: 1.8; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            background-color: var(--bg);
+            color: var(--text);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        h1 { 
+            color: var(--secondary); 
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        h2 { 
+            margin-top: 40px; 
+            color: var(--primary); 
+            border-left: 4px solid var(--secondary);
+            padding-left: 15px;
+            font-size: 1.5rem;
+        }
+        .container {
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+        }
+        p, li { color: var(--text-muted); font-size: 1.1rem; }
+        footer { 
+            margin-top: 80px; 
+            text-align: center;
+            font-size: 0.9rem; 
+            color: var(--text-muted); 
+            border-top: 1px solid rgba(255, 255, 255, 0.05); 
+            padding-top: 40px; 
+        }
+        .accent { color: var(--secondary); font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Terms of Service for ShopKeeper</h1>
-    <p><strong>Last Updated: March 30, 2026</strong></p>
-    <p>These Terms of Service govern your use of the <strong>ShopKeeper</strong> application and all related services provided by GodlLuffy.</p>
-    <h2>1. Acceptable Use</h2>
-    <p>By using ShopKeeper, you agree to: Use the application only for lawful business purposes. Maintain the confidentiality of your account PIN and credentials. Not attempt to bypass security measures or reverse-engineer the software.</p>
-    <h2>2. Business Data Responsibility</h2>
-    <p>While ShopKeeper provides secure cloud synchronization, you are responsible for maintaining accurate business records and ensuring compliance with local tax and commercial regulations.</p>
-    <h2>3. Account Termination</h2>
-    <p>We reserve the right to suspend or terminate accounts that: Violate these Terms of Service. Are suspected of fraudulent or malicious activity.</p>
-    <h2>4. Limitation of Liability</h2>
-    <p>ShopKeeper is provided "as is". We are not liable for any data loss, financial loss, or business interruptions caused by server downtime or software bugs.</p>
-    <footer>Contact us at: gundelwaranup119@gmail.com</footer>
+    <div class="header">
+        <h1>Terms of Service</h1>
+        <p>Last Updated: March 30, 2026</p>
+    </div>
+    
+    <div class="container">
+        <p>By accessing <span class="accent">ShopKeeper PRO</span>, you agree to these project-specific Terms of Service. These terms define the professional relationship between the software platform and the shop operator.</p>
+        
+        <h2>1. Service Scope</h2>
+        <p>ShopKeeper PRO provides a high-performance Retail OS for inventory, billing, and AI business analysis. The service is provided "as is" under the v1.0.0 release lifecycle.</p>
+
+        <h2>2. Data Integrity</h2>
+        <p>While the internal <span class="accent">Offline-First Sync Engine</span> maintains record persistence via Firebase, the user is responsible for auditing local transactions. We recommend regular backups of business debt (Udhar) and inventory stock data.</p>
+
+        <h2>3. Prohibited Use</h2>
+        <p>Users shall not attempt to reverse-engineer the BLoC-based state management or bypass PIN-protected administrative screens. Intentional data corruption via database injection is grounds for cloud account termination.</p>
+
+        <h2>4. Limitation of Liability</h2>
+        <p>GodlLuffy and the ShopKeeper development team are not liable for business loss resulting from incorrect data entry or hardware-level failures of the mobile terminal.</p>
+        
+        <footer>
+            <p>ShopKeeper PRO | Architectural Version 1.0.0</p>
+            <p>Admin: <a href="mailto:gundelwaranup119@gmail.com" style="color: var(--secondary); text-decoration: none;">gundelwaranup119@gmail.com</a></p>
+        </footer>
+    </div>
 </body>
 </html>

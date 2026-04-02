@@ -28,7 +28,7 @@ class MonthlyGraphWidget extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: value,
-              color: value >= 0 ? AppTheme.successColor : AppTheme.errorColor,
+              color: value >= 0 ? AppTheme.successEmerald : AppTheme.dangerRose,
               width: 16,
               borderRadius: BorderRadius.circular(4),
             ),

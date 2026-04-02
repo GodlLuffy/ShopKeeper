@@ -221,19 +221,27 @@ class _BillingScreenState extends State<BillingScreen> {
                         flex: 4,
                         child: GestureDetector(
                           onTap: () => _showAddProductSheet(context),
-                          child: GlassCard(
-                            margin: EdgeInsets.zero,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            borderRadius: 16,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.search_rounded, color: AppTheme.accentTeal),
-                                const SizedBox(width: 12),
-                                Text(
-                                  AppStrings.get('search_products'),
-                                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w600),
-                                ),
-                              ],
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: AppTheme.premiumShadow,
+                              border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            ),
+                            child: GlassCard(
+                              margin: EdgeInsets.zero,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              borderRadius: 24,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.search_rounded, color: AppTheme.accentTeal),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    AppStrings.get('search_products'),
+                                    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -246,11 +254,9 @@ class _BillingScreenState extends State<BillingScreen> {
                             height: 56,
                             width: 56,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [AppTheme.primaryIndigo, AppTheme.accentTeal]),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(color: AppTheme.primaryIndigo.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
-                              ],
+                              gradient: AppTheme.premiumGradient,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: AppTheme.premiumShadow,
                             ),
                             child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
                           ),

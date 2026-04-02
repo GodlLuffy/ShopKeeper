@@ -22,9 +22,16 @@ class ProductCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final isLowStock = product.stockQuantity <= product.minStockAlert;
 
-    return GlassCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      onTap: onTap,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.premiumShadow,
+        border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.05)),
+      ),
+      child: GlassCard(
+        onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -127,10 +134,9 @@ class ProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppTheme.successEmerald.withOpacity(0.2)),
                         ),
-                        child: const Icon(Icons.bolt_rounded, color: AppTheme.successEmerald, size: 20),
-                      ),
-                    ),
-                  )
+                      ), // Close Container 130
+                    ), // Close InkWell 127
+                  ) // Close Material 125
                 else
                   Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3), size: 24),
               ],
@@ -138,6 +144,7 @@ class ProductCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

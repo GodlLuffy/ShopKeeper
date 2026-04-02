@@ -38,7 +38,7 @@ class PremiumLoader extends StatelessWidget {
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.primaryIndigo.withOpacity(0.8),
+                      AppTheme.primaryOrchid.withOpacity(0.8),
                     ),
                     backgroundColor: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
                   ),

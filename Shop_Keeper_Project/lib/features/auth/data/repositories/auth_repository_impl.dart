@@ -74,13 +74,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> updateProfile(UserEntity user) async {
     try {
-      final userModel = UserModel(
-        uid: user.uid,
-        name: user.name,
-        shopName: user.shopName,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-      );
+      final userModel = UserModel.fromEntity(user);
       await remoteDataSource.updateProfile(userModel);
       return const Right(null);
     } catch (e) {

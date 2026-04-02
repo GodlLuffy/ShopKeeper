@@ -29,6 +29,12 @@ class CustomerEntity extends Equatable {
   @HiveField(7)
   final String? notes;
 
+  @HiveField(8)
+  final DateTime? updatedAt;
+
+  @HiveField(9)
+  final bool isSynced;
+
   const CustomerEntity({
     required this.id,
     required this.shopId,
@@ -37,6 +43,8 @@ class CustomerEntity extends Equatable {
     this.totalCredit = 0.0,
     required this.lastTransactionDate,
     required this.createdAt,
+    this.updatedAt,
+    this.isSynced = false,
     this.notes,
   });
 
@@ -48,6 +56,8 @@ class CustomerEntity extends Equatable {
     double? totalCredit,
     DateTime? lastTransactionDate,
     DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isSynced,
     String? notes,
   }) {
     return CustomerEntity(
@@ -58,6 +68,8 @@ class CustomerEntity extends Equatable {
       totalCredit: totalCredit ?? this.totalCredit,
       lastTransactionDate: lastTransactionDate ?? this.lastTransactionDate,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
       notes: notes ?? this.notes,
     );
   }
@@ -66,5 +78,5 @@ class CustomerEntity extends Equatable {
   bool get isSettled => totalCredit <= 0;
 
   @override
-  List<Object?> get props => [id, shopId, name, phone, totalCredit, lastTransactionDate, createdAt, notes];
+  List<Object?> get props => [id, shopId, name, phone, totalCredit, lastTransactionDate, createdAt, updatedAt, isSynced, notes];
 }

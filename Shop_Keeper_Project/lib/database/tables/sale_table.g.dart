@@ -26,6 +26,7 @@ class SaleTableAdapter extends TypeAdapter<SaleTable> {
       totalProfit: fields[6] as double,
       date: fields[7] as DateTime,
       userId: fields[8] as String,
+      updatedAt: fields[10] as DateTime?,
       isSynced: fields[9] as bool,
     );
   }
@@ -33,7 +34,7 @@ class SaleTableAdapter extends TypeAdapter<SaleTable> {
   @override
   void write(BinaryWriter writer, SaleTable obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class SaleTableAdapter extends TypeAdapter<SaleTable> {
       ..writeByte(8)
       ..write(obj.userId)
       ..writeByte(9)
-      ..write(obj.isSynced);
+      ..write(obj.isSynced)
+      ..writeByte(10)
+      ..write(obj.updatedAt);
   }
 
   @override

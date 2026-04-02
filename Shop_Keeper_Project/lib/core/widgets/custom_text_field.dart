@@ -9,6 +9,7 @@ class CustomTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final String? hintText;
   final bool readOnly;
+  final bool obscureText;
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
   final Function(String)? onChanged;
@@ -22,6 +23,7 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.hintText,
     this.readOnly = false,
+    this.obscureText = false,
     this.onTap,
     this.validator,
     this.onChanged,
@@ -50,6 +52,7 @@ class CustomTextField extends StatelessWidget {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscureText,
           readOnly: readOnly,
           onTap: onTap,
           validator: validator,

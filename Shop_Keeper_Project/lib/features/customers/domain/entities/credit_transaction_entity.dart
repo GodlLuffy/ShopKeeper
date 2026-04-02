@@ -12,6 +12,8 @@ class CreditTransactionEntity extends Equatable {
   final DateTime date;
   final double balanceAfter;
   final String? billId;
+  final DateTime? updatedAt;
+  final bool isSynced;
 
   const CreditTransactionEntity({
     required this.id,
@@ -23,6 +25,8 @@ class CreditTransactionEntity extends Equatable {
     required this.date,
     required this.balanceAfter,
     this.billId,
+    this.updatedAt,
+    this.isSynced = false,
   });
 
   CreditTransactionEntity copyWith({
@@ -35,6 +39,8 @@ class CreditTransactionEntity extends Equatable {
     DateTime? date,
     double? balanceAfter,
     String? billId,
+    DateTime? updatedAt,
+    bool? isSynced,
   }) {
     return CreditTransactionEntity(
       id: id ?? this.id,
@@ -46,6 +52,8 @@ class CreditTransactionEntity extends Equatable {
       date: date ?? this.date,
       balanceAfter: balanceAfter ?? this.balanceAfter,
       billId: billId ?? this.billId,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 
@@ -53,5 +61,5 @@ class CreditTransactionEntity extends Equatable {
   bool get isPayment => type == TransactionType.payment;
 
   @override
-  List<Object?> get props => [id, customerId, shopId, amount, type, description, date, balanceAfter, billId];
+  List<Object?> get props => [id, customerId, shopId, amount, type, description, date, balanceAfter, billId, updatedAt, isSynced];
 }

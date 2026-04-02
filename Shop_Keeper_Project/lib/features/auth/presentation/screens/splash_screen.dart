@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
-import 'package:shop_keeper_project/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:shop_keeper_project/features/auth/presentation/screens/login_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,38 +20,18 @@ class _SplashScreenState extends State<SplashScreen> {
     _checkAuth();
   }
 
-  void _navigateToLogin() {
-    if (_hasNavigated) return;
-    _hasNavigated = true;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-  }
-
-  void _navigateToDashboard() {
-    if (_hasNavigated) return;
-    _hasNavigated = true;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const DashboardScreen()),
-    );
-  }
-
   Future<void> _checkAuth() async {
-    // Artificial delay for splash branding
     await Future.delayed(const Duration(seconds: 2));
     
     if (!mounted || _hasNavigated) return;
     
-    // Trigger auth check
     context.read<AuthCubit>().checkAuth();
     
-    // Safety timeout: Force navigate to Login after 10 seconds total
     Future.delayed(const Duration(seconds: 8), () {
       if (mounted && !_hasNavigated) {
         debugPrint('SPLASH: Safety timeout reached, navigating to Login');
-        _navigateToLogin();
+        _hasNavigated = true;
+        context.go('/login');
       }
     });
   }
@@ -64,9 +43,11 @@ class _SplashScreenState extends State<SplashScreen> {
         if (_hasNavigated) return;
         
         if (state is Authenticated) {
-          _navigateToDashboard();
+          _hasNavigated = true;
+          context.go('/dashboard');
         } else if (state is Unauthenticated || state is AuthError) {
-          _navigateToLogin();
+          _hasNavigated = true;
+          context.go('/login');
         }
       },
       child: Scaffold(

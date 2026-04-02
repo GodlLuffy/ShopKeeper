@@ -34,6 +34,9 @@ class SaleTable extends HiveObject {
   @HiveField(9)
   final bool isSynced;
 
+  @HiveField(10)
+  final DateTime? updatedAt;
+
   SaleTable({
     required this.id,
     required this.productId,
@@ -44,6 +47,7 @@ class SaleTable extends HiveObject {
     required this.totalProfit,
     required this.date,
     required this.userId,
+    this.updatedAt,
     this.isSynced = false,
   });
 
@@ -58,6 +62,7 @@ class SaleTable extends HiveObject {
       'totalProfit': totalProfit,
       'date': date.toIso8601String(),
       'userId': userId,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 }

@@ -31,6 +31,9 @@ class CustomerTable extends HiveObject {
   @HiveField(8)
   final String? notes;
 
+  @HiveField(9)
+  final DateTime? updatedAt;
+
   CustomerTable({
     required this.id,
     required this.shopId,
@@ -41,6 +44,7 @@ class CustomerTable extends HiveObject {
     required this.createdAt,
     this.isSynced = false,
     this.notes,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -53,6 +57,7 @@ class CustomerTable extends HiveObject {
       'lastTransactionDate': lastTransactionDate.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'notes': notes,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 }

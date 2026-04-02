@@ -73,8 +73,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       width: 20,
       height: 20,
       decoration: BoxDecoration(
-        color: filled ? AppTheme.primaryColor : Colors.white,
-        border: Border.all(color: filled ? AppTheme.primaryColor : const Color(0xFFCBD5E1), width: 2),
+        color: filled ? AppTheme.primaryIndigo : Colors.white,
+        border: Border.all(color: filled ? AppTheme.primaryIndigo : const Color(0xFFCBD5E1), width: 2),
         shape: BoxShape.circle,
       ),
     );
@@ -140,7 +140,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(_isConfirmStep ? Icons.check_circle_outline : Icons.lock_outline, size: 64, color: AppTheme.primaryColor),
+              Icon(_isConfirmStep ? Icons.check_circle_outline : Icons.lock_outline, size: 64, color: AppTheme.primaryIndigo),
               const SizedBox(height: 20),
               Text(
                 _isConfirmStep ? "Confirm Your PIN" : "Protect Your App",
@@ -157,7 +157,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               SizedBox(
                 height: 24,
                 child: _isError 
-                  ? const Text("PINs do not match. Try again.", style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w500)) 
+                  ? const Text("PINs do not match. Try again.", style: TextStyle(color: AppTheme.dangerRose, fontWeight: FontWeight.w500)) 
                   : const SizedBox.shrink(),
               ),
               const Spacer(),

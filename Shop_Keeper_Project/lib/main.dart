@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_keeper_project/core/theme/app_theme.dart';
 import 'package:shop_keeper_project/firebase_options.dart';
 import 'package:shop_keeper_project/injection_container.dart' as di;
+import 'package:shop_keeper_project/core/services/sync_engine.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/bloc/inventory_cubit.dart';
 import 'package:shop_keeper_project/features/sales/presentation/bloc/sales_cubit.dart';
@@ -16,9 +17,19 @@ import 'package:shop_keeper_project/features/billing/bloc/billing_bloc.dart';
 import 'package:shop_keeper_project/features/customers/presentation/bloc/customer_cubit.dart';
 import 'package:shop_keeper_project/features/dashboard/presentation/bloc/dashboard_cubit.dart';
 import 'package:shop_keeper_project/features/settings/presentation/bloc/settings_cubit.dart';
+import 'package:shop_keeper_project/features/suppliers/presentation/bloc/supplier_cubit.dart';
 import 'package:shop_keeper_project/core/localization/locale_cubit.dart';
 import 'package:shop_keeper_project/core/localization/app_strings.dart';
 import 'package:shop_keeper_project/core/routing/app_router.dart';
+import 'package:shop_keeper_project/services/seed_data_service.dart';
+import 'package:shop_keeper_project/core/services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +102,9 @@ void main() async {
       });
       firebaseInitialized = true;
       firebaseInitMessage = 'Firebase connected successfully ✅';
+      
+      // Set background handler
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     }
   } catch (e) {
     debugPrint('Firebase initialization failed or timed out: $e');
@@ -111,6 +125,12 @@ void main() async {
         throw TimeoutException('App initialization timed out');
       },
     );
+
+    // Initialize Notifications if Firebase is active
+    if (firebaseInitialized) {
+      await di.sl<NotificationService>().initialize();
+      debugPrint('NOTIFICATIONS: Initialized successfully');
+    }
     
     debugPrint('CHECKING AUTH STATUS...');
     // Pre-check auth before UI starts
@@ -122,6 +142,13 @@ void main() async {
     );
     
     debugPrint('INITIALIZATION COMPLETE ✅');
+    
+    debugPrint('SEEDING DEMO DATA...');
+    try {
+      await di.sl<SeedDataService>().seedDemoDataIfNeeded();
+    } catch (e) {
+      debugPrint('SEED: Error during demo data seeding: $e');
+    }
   } catch (e) {
     debugPrint('CRITICAL INITIALIZATION FAILURE: $e');
     runApp(MaterialApp(
@@ -173,6 +200,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           di.sl<AuthCubit>().requirePin();
         }
       }
+      // Trigger sync on resume
+      _triggerBackgroundSync();
+    }
+  }
+
+  void _triggerBackgroundSync() async {
+    try {
+      // Trigger the new Senior-Level Sync Engine
+      if (di.sl.isRegistered<SyncEngine>()) {
+        await di.sl<SyncEngine>().syncAll();
+      }
+    } catch (e) {
+      debugPrint('BACKGROUND SYNC ERROR: $e');
     }
   }
 
@@ -187,6 +227,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         BlocProvider(create: (_) => di.sl<AIAssistantCubit>()),
         BlocProvider(create: (_) => di.sl<BillingBloc>()),
         BlocProvider(create: (_) => di.sl<CustomerCubit>()),
+        BlocProvider(create: (_) => di.sl<SupplierCubit>()),
         BlocProvider(create: (_) => di.sl<DashboardCubit>()),
         BlocProvider(create: (_) => di.sl<SettingsCubit>()),
         BlocProvider(create: (_) => di.sl<LocaleCubit>()),

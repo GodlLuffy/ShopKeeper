@@ -196,15 +196,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: _buildMiniStat('REVENUE', '₹${totalRevenue.toStringAsFixed(0)}', AppTheme.primaryIndigo),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.darkBackgroundLayer,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: AppTheme.premiumShadow,
+                                    border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.1)),
+                                  ),
+                                  child: _buildMiniStat('REVENUE', '₹${totalRevenue.toStringAsFixed(0)}', AppTheme.primaryIndigo),
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: _buildMiniStat('PROFIT', '₹${totalProfit.toStringAsFixed(0)}', AppTheme.successEmerald),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.darkBackgroundLayer,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: AppTheme.premiumShadow,
+                                    border: Border.all(color: AppTheme.successEmerald.withOpacity(0.1)),
+                                  ),
+                                  child: _buildMiniStat('PROFIT', '₹${totalProfit.toStringAsFixed(0)}', AppTheme.successEmerald),
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: _buildMiniStat('SALES', '${sales.length}', AppTheme.accentTeal),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.darkBackgroundLayer,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: AppTheme.premiumShadow,
+                                    border: Border.all(color: AppTheme.accentTeal.withOpacity(0.1)),
+                                  ),
+                                  child: _buildMiniStat('SALES', '${sales.length}', AppTheme.accentTeal),
+                                ),
                               ),
                             ],
                           ).animate().fadeIn(duration: 400.ms),
@@ -307,67 +331,75 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
         ),
-        GlassCard(
-          padding: const EdgeInsets.fromLTRB(8, 24, 16, 16),
-          child: AspectRatio(
-            aspectRatio: 1.6,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true, drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.03), strokeWidth: 1),
-                ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true, reservedSize: 30, interval: 5,
-                      getTitlesWidget: (value, meta) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            value.toInt().toString(),
-                            style: TextStyle(fontSize: 10, color: AppTheme.textMuted.withOpacity(0.7), fontWeight: FontWeight.bold),
-                          ),
-                        );
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.darkBackgroundLayer,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: AppTheme.premiumShadow,
+            border: Border.all(color: color.withOpacity(0.1)),
+          ),
+          child: GlassCard(
+            padding: const EdgeInsets.fromLTRB(8, 24, 16, 16),
+            child: AspectRatio(
+              aspectRatio: 1.6,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true, drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.03), strokeWidth: 1),
+                  ),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true, reservedSize: 30, interval: 5,
+                        getTitlesWidget: (value, meta) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              value.toInt().toString(),
+                              style: TextStyle(fontSize: 10, color: AppTheme.textMuted.withOpacity(0.7), fontWeight: FontWeight.bold),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: chartData,
+                      isCurved: true,
+                      gradient: LinearGradient(colors: [color, color.withOpacity(0.5)]),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 3, color: color, strokeWidth: 2, strokeColor: AppTheme.darkBackgroundLayer,
+                        ),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                          colors: [color.withOpacity(0.15), color.withOpacity(0.0)],
+                        ),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (_) => AppTheme.darkBackgroundLayer.withOpacity(0.8),
+                      tooltipRoundedRadius: 12,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem('₹${spot.y.toStringAsFixed(0)}', const TextStyle(color: Colors.white, fontWeight: FontWeight.bold));
+                        }).toList();
                       },
                     ),
-                  ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: chartData,
-                    isCurved: true,
-                    gradient: LinearGradient(colors: [color, color.withOpacity(0.5)]),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 3, color: color, strokeWidth: 2, strokeColor: AppTheme.darkBackgroundLayer,
-                      ),
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                        colors: [color.withOpacity(0.15), color.withOpacity(0.0)],
-                      ),
-                    ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => AppTheme.darkBackgroundLayer.withOpacity(0.8),
-                    tooltipRoundedRadius: 12,
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        return LineTooltipItem('₹${spot.y.toStringAsFixed(0)}', const TextStyle(color: Colors.white, fontWeight: FontWeight.bold));
-                      }).toList();
-                    },
                   ),
                 ),
               ),

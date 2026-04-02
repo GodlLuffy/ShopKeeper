@@ -83,7 +83,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill {
         if (state is AuthError) {
           _triggerShake();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: AppTheme.errorColor),
+            SnackBar(content: Text(state.message), backgroundColor: AppTheme.dangerRose),
           );
         }
       },
@@ -121,7 +121,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.lock, size: 60, color: AppTheme.primaryColor),
+                        const Icon(Icons.lock, size: 60, color: AppTheme.primaryIndigo),
                         const SizedBox(height: 16),
                         const Text(
                           "Secure Verification",
@@ -160,7 +160,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill {
                                   ? null
                                   : () => _verifyOTP(_otpCode),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.primaryIndigo,
                                 minimumSize: const Size(double.infinity, 56),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
@@ -189,7 +189,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill {
                     },
                     child: const Text(
                       "Didn't receive OTP? Resend",
-                      style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(color: AppTheme.primaryIndigo, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
               ],

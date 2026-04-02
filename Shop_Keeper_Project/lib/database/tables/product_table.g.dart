@@ -26,6 +26,7 @@ class ProductTableAdapter extends TypeAdapter<ProductTable> {
       minStockAlert: fields[6] as int,
       userId: fields[7] as String,
       createdAt: fields[8] as DateTime,
+      updatedAt: fields[12] as DateTime?,
       isSynced: fields[9] as bool,
       imageUrl: fields[10] as String?,
       barcode: fields[11] as String?,
@@ -35,7 +36,7 @@ class ProductTableAdapter extends TypeAdapter<ProductTable> {
   @override
   void write(BinaryWriter writer, ProductTable obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class ProductTableAdapter extends TypeAdapter<ProductTable> {
       ..writeByte(10)
       ..write(obj.imageUrl)
       ..writeByte(11)
-      ..write(obj.barcode);
+      ..write(obj.barcode)
+      ..writeByte(12)
+      ..write(obj.updatedAt);
   }
 
   @override

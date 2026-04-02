@@ -149,6 +149,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -166,26 +167,36 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: AppTheme.textWhite),
-              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-              decoration: InputDecoration(
-                hintText: AppStrings.get('search_customers'),
-                hintStyle: const TextStyle(color: AppTheme.textMuted),
-                prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMuted),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, color: AppTheme.textMuted),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                boxShadow: AppTheme.premiumShadow,
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: AppTheme.textWhite, fontSize: 14),
+                onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                decoration: InputDecoration(
+                  hintText: AppStrings.get('search_customers'),
+                  hintStyle: const TextStyle(color: AppTheme.textMuted),
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMuted),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, color: AppTheme.textMuted, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                ),
               ),
             ),
           ),
@@ -196,30 +207,38 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               if (state is CustomerLoaded && state.customers.isNotEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: GlassCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildSummaryItem(
-                            AppStrings.get('total'),
-                            '${state.customers.length}',
-                            AppTheme.primaryIndigo,
-                          ),
-                          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
-                          _buildSummaryItem(
-                            AppStrings.get('udhar'),
-                            '₹${NumberFormat('#,##0').format(state.totalOutstanding)}',
-                            state.totalOutstanding > 0 ? AppTheme.dangerRose : AppTheme.successEmerald,
-                          ),
-                          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
-                          _buildSummaryItem(
-                            AppStrings.get('active'),
-                            '${state.customersWithCredit}',
-                            AppTheme.warningAmber,
-                          ),
-                        ],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppTheme.premiumShadow,
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildSummaryItem(
+                              AppStrings.get('total'),
+                              '${state.customers.length}',
+                              AppTheme.primaryIndigo,
+                            ),
+                            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
+                            _buildSummaryItem(
+                              AppStrings.get('udhar'),
+                              '₹${NumberFormat('#,##0').format(state.totalOutstanding)}',
+                              state.totalOutstanding > 0 ? AppTheme.dangerRose : AppTheme.successEmerald,
+                            ),
+                            Container(width: 1, height: 40, color: Colors.white.withOpacity(0.1)),
+                            _buildSummaryItem(
+                              AppStrings.get('active'),
+                              '${state.customersWithCredit}',
+                              AppTheme.warningAmber,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -331,10 +350,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         : '✓ ${AppStrings.get('settled')}';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GlassCard(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.premiumShadow,
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: GlassCard(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
           onTap: () => context.push('/customers/${customer.id}'),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -419,9 +445,8 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 20),
               ],
             ),
-          ),
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms, delay: (50 * index).ms).slideX(begin: 0.05);
+    ))).animate().fadeIn(duration: 300.ms, delay: (50 * index).ms).slideX(begin: 0.05);
   }
 }

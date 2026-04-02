@@ -33,3 +33,9 @@ migrate_working_dir/
 
 # Vscode
 .vscode/
+
+# Binaries
+*.exe
+firebase.exe
+cloud_sql_proxy*
+

@@ -3,9 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:shop_keeper_project/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/login_screen.dart';
 import 'package:shop_keeper_project/features/auth/presentation/screens/pin_lock_screen.dart';
+import 'package:shop_keeper_project/features/auth/presentation/screens/verify_email_page.dart';
+import 'package:shop_keeper_project/features/auth/presentation/screens/forgot_password_page.dart';
 import 'package:shop_keeper_project/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/screens/product_list_screen.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/screens/add_product_screen.dart';
+import 'package:shop_keeper_project/features/inventory/presentation/screens/restock_calculator_screen.dart';
 import 'package:shop_keeper_project/features/sales/presentation/screens/sales_history_screen.dart';
 import 'package:shop_keeper_project/features/sales/presentation/screens/add_sale_screen.dart';
 import 'package:shop_keeper_project/features/expenses/presentation/screens/expense_list_screen.dart';
@@ -20,6 +23,7 @@ import 'package:shop_keeper_project/features/auth/presentation/screens/onboardin
 import 'package:shop_keeper_project/features/billing/screen/billing_screen.dart';
 import 'package:shop_keeper_project/features/customers/presentation/screens/customer_list_screen.dart';
 import 'package:shop_keeper_project/features/customers/presentation/screens/customer_profile_screen.dart';
+import 'package:shop_keeper_project/features/suppliers/presentation/screens/supplier_list_screen.dart';
 import 'package:shop_keeper_project/features/inventory/presentation/screens/edit_product_screen.dart';
 import 'package:shop_keeper_project/main.dart';
 
@@ -36,10 +40,21 @@ class AppRouter {
       final isLoggingIn = state.matchedLocation == '/login';
       final isSplash = state.matchedLocation == '/splash';
       final isPin = state.matchedLocation == '/pin';
+      final isRegistering = state.matchedLocation == '/register';
+      final isOnboarding = state.matchedLocation == '/onboarding';
+      final isVerifyEmail = state.matchedLocation == '/verify-email';
+      final isForgotPassword = state.matchedLocation == '/forgot-password';
 
       if (authState is Unauthenticated) {
-        final isRegistering = state.matchedLocation == '/register';
-        return (isLoggingIn || isRegistering || isSplash) ? null : '/login';
+        if (isLoggingIn || isRegistering || isOnboarding || isForgotPassword) {
+          return null;
+        }
+        return '/login';
+      }
+
+      if (authState is EmailVerificationPending) {
+        if (isVerifyEmail) return null;
+        return '/verify-email';
       }
 
       if (authState is PinRequired) {
@@ -47,8 +62,7 @@ class AppRouter {
       }
 
       if (authState is Authenticated) {
-        final isRegistering = state.matchedLocation == '/register';
-        if (isLoggingIn || isSplash || isPin || isRegistering) {
+        if (isLoggingIn || isSplash || isPin || isVerifyEmail) {
           return '/dashboard';
         }
       }
@@ -81,8 +95,16 @@ class AppRouter {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
         path: '/pin',
         builder: (context, state) => const PinLockScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => const VerifyEmailPage(),
       ),
       GoRoute(
         path: '/dashboard',
@@ -102,6 +124,10 @@ class AppRouter {
               final productId = state.pathParameters['id']!;
               return EditProductScreen(productId: productId);
             },
+          ),
+          GoRoute(
+            path: 'restock',
+            builder: (context, state) => const RestockCalculatorScreen(),
           ),
         ],
       ),
@@ -161,6 +187,10 @@ class AppRouter {
             },
           ),
         ],
+      ),
+      GoRoute(
+        path: '/suppliers',
+        builder: (context, state) => const SupplierListScreen(),
       ),
     ],
   );

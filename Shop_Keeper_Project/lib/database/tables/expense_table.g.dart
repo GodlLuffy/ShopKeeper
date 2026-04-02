@@ -23,6 +23,7 @@ class ExpenseTableAdapter extends TypeAdapter<ExpenseTable> {
       category: fields[3] as String,
       date: fields[4] as DateTime,
       userId: fields[5] as String,
+      updatedAt: fields[7] as DateTime?,
       isSynced: fields[6] as bool,
     );
   }
@@ -30,7 +31,7 @@ class ExpenseTableAdapter extends TypeAdapter<ExpenseTable> {
   @override
   void write(BinaryWriter writer, ExpenseTable obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class ExpenseTableAdapter extends TypeAdapter<ExpenseTable> {
       ..writeByte(5)
       ..write(obj.userId)
       ..writeByte(6)
-      ..write(obj.isSynced);
+      ..write(obj.isSynced)
+      ..writeByte(7)
+      ..write(obj.updatedAt);
   }
 
   @override

@@ -30,6 +30,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
       totalCredit: t.totalCredit,
       lastTransactionDate: t.lastTransactionDate,
       createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      isSynced: t.isSynced,
       notes: t.notes,
     );
   }
@@ -43,6 +45,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
       totalCredit: e.totalCredit,
       lastTransactionDate: e.lastTransactionDate,
       createdAt: e.createdAt,
+      updatedAt: e.updatedAt,
+      isSynced: e.isSynced,
       notes: e.notes,
     );
   }
@@ -58,6 +62,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
       date: t.date,
       balanceAfter: t.balanceAfter,
       billId: t.billId,
+      updatedAt: t.updatedAt,
+      isSynced: t.isSynced,
     );
   }
 
@@ -175,6 +181,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         date: now,
         balanceAfter: newBalance,
         billId: billId,
+        updatedAt: now,
       );
 
       // Update customer balance
@@ -186,6 +193,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
         totalCredit: newBalance,
         lastTransactionDate: now,
         createdAt: customerTable.createdAt,
+        updatedAt: now,
+        isSynced: false,
         notes: customerTable.notes,
       );
 
@@ -231,6 +240,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         description: description ?? 'Payment received',
         date: now,
         balanceAfter: newBalance,
+        updatedAt: now,
       );
 
       final updatedCustomer = CustomerTable(
@@ -241,6 +251,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
         totalCredit: newBalance,
         lastTransactionDate: now,
         createdAt: customerTable.createdAt,
+        updatedAt: now,
+        isSynced: false,
         notes: customerTable.notes,
       );
 

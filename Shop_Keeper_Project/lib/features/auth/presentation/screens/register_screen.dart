@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _shopNameController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -117,12 +118,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: Icons.email_outlined,
                       ),
                       const SizedBox(height: 20),
-                      CustomTextField(
-                        label: AppStrings.get('password'),
-                        controller: _passwordController,
-                        hintText: '••••••••',
-                        prefixIcon: Icons.lock_outline_rounded,
-                        suffixIcon: const Icon(Icons.visibility_off_outlined, color: AppTheme.textMuted, size: 20),
+                      StatefulBuilder(
+                        builder: (context, setStateField) {
+                          return CustomTextField(
+                            label: AppStrings.get('password'),
+                            controller: _passwordController,
+                            hintText: '••••••••',
+                            prefixIcon: Icons.lock_outline_rounded,
+                            obscureText: _obscurePassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: AppTheme.textMuted, size: 20),
+                              onPressed: () => setStateField(() => _obscurePassword = !_obscurePassword),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 32),
                       
@@ -186,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 24),
 
                 TextButton(
-                  onPressed: () => context.pop(),
+                  onPressed: () => context.go('/login'),
                   child: Text(
                     AppStrings.get('already_have_account'),
                     style: const TextStyle(

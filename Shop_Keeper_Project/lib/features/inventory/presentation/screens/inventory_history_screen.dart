@@ -24,10 +24,10 @@ class InventoryHistoryScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isAdd ? AppTheme.successColor.withOpacity(0.1) : AppTheme.errorColor.withOpacity(0.1),
+                    backgroundColor: isAdd ? AppTheme.successEmerald.withOpacity(0.1) : AppTheme.dangerRose.withOpacity(0.1),
                     child: Icon(
                       isAdd ? Icons.add : Icons.remove,
-                      color: isAdd ? AppTheme.successColor : AppTheme.errorColor,
+                      color: isAdd ? AppTheme.successEmerald : AppTheme.dangerRose,
                     ),
                   ),
                   title: Text(isAdd ? 'Stock Added: Kurkure' : 'Sale: Lays'),
@@ -37,7 +37,7 @@ class InventoryHistoryScreen extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: isAdd ? AppTheme.successColor : AppTheme.errorColor,
+                      color: isAdd ? AppTheme.successEmerald : AppTheme.dangerRose,
                     ),
                   ),
                 ),

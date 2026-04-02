@@ -61,6 +61,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
+        actions: [
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.accentTeal.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.calculate_rounded, color: AppTheme.accentTeal, size: 20),
+            ),
+            onPressed: () => context.push('/inventory/restock'),
+            tooltip: 'Restock Calculator',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -71,11 +86,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
               height: 50,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.05)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-                ],
+                boxShadow: AppTheme.premiumShadow,
               ),
               child: TextField(
                 controller: _searchController,

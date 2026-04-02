@@ -18,7 +18,7 @@ class BackupRestoreScreen extends StatelessWidget {
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 32),
-            _buildSyncStatus(context, 'Last Synced: Today, 10:30 AM', Icons.cloud_done, AppTheme.successColor),
+            _buildSyncStatus(context, 'Last Synced: Today, 10:30 AM', Icons.cloud_done, AppTheme.successEmerald),
             const SizedBox(height: 24),
             _buildSyncStatus(context, 'Offline Changes: 5 items pending', Icons.cloud_off, AppTheme.accentColor),
             const Spacer(),

@@ -73,17 +73,57 @@ class _ProfitReportScreenState extends State<ProfitReportScreen> {
                   // Overview Cards
                   Row(
                     children: [
-                      Expanded(child: _buildMetricCard('Total Revenue', '₹${totalRevenue.toStringAsFixed(0)}', AppTheme.primaryIndigo)),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkBackgroundLayer,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.premiumShadow,
+                            border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.1)),
+                          ),
+                          child: _buildMetricCard('Total Revenue', '₹${totalRevenue.toStringAsFixed(0)}', AppTheme.primaryIndigo),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildMetricCard('Total Cost', '₹${totalCost.toStringAsFixed(0)}', AppTheme.dangerRose)),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkBackgroundLayer,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.premiumShadow,
+                            border: Border.all(color: AppTheme.dangerRose.withOpacity(0.1)),
+                          ),
+                          child: _buildMetricCard('Total Cost', '₹${totalCost.toStringAsFixed(0)}', AppTheme.dangerRose),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildMetricCard('Net Profit', '₹${totalProfit.toStringAsFixed(0)}', AppTheme.successEmerald)),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkBackgroundLayer,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.premiumShadow,
+                            border: Border.all(color: AppTheme.successEmerald.withOpacity(0.1)),
+                          ),
+                          child: _buildMetricCard('Net Profit', '₹${totalProfit.toStringAsFixed(0)}', AppTheme.successEmerald),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildMetricCard('Margin', '${marginPct.toStringAsFixed(1)}%', AppTheme.accentTeal)),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkBackgroundLayer,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.premiumShadow,
+                            border: Border.all(color: AppTheme.accentTeal.withOpacity(0.1)),
+                          ),
+                          child: _buildMetricCard('Margin', '${marginPct.toStringAsFixed(1)}%', AppTheme.accentTeal),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -91,30 +131,38 @@ class _ProfitReportScreenState extends State<ProfitReportScreen> {
                   // Profit Pie Chart
                   const Text('COST vs PROFIT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppTheme.accentTeal, letterSpacing: 1.5)),
                   const SizedBox(height: 16),
-                  GlassCard(
-                    padding: const EdgeInsets.all(20),
-                    child: SizedBox(
-                      height: 200,
-                      child: PieChart(
-                        PieChartData(
-                          sectionsSpace: 4,
-                          centerSpaceRadius: 50,
-                          sections: [
-                            PieChartSectionData(
-                              value: totalCost,
-                              color: AppTheme.dangerRose,
-                              title: 'Cost\n${(totalCost / totalRevenue * 100).toStringAsFixed(0)}%',
-                              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
-                              radius: 50,
-                            ),
-                            PieChartSectionData(
-                              value: totalProfit,
-                              color: AppTheme.successEmerald,
-                              title: 'Profit\n${marginPct.toStringAsFixed(0)}%',
-                              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
-                              radius: 50,
-                            ),
-                          ],
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkBackgroundLayer,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppTheme.premiumShadow,
+                      border: Border.all(color: AppTheme.accentTeal.withOpacity(0.1)),
+                    ),
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(24),
+                      child: SizedBox(
+                        height: 200,
+                        child: PieChart(
+                          PieChartData(
+                            sectionsSpace: 4,
+                            centerSpaceRadius: 50,
+                            sections: [
+                              PieChartSectionData(
+                                value: totalCost,
+                                color: AppTheme.dangerRose,
+                                title: 'Cost\n${(totalCost / totalRevenue * 100).toStringAsFixed(0)}%',
+                                titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                                radius: 50,
+                              ),
+                              PieChartSectionData(
+                                value: totalProfit,
+                                color: AppTheme.successEmerald,
+                                title: 'Profit\n${marginPct.toStringAsFixed(0)}%',
+                                titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                                radius: 50,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -129,43 +177,51 @@ class _ProfitReportScreenState extends State<ProfitReportScreen> {
                     final prod = entry.value;
                     final barWidth = top5.isNotEmpty ? (prod.value / top5.first.value) : 0.0;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 24, height: 24,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryIndigo.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkBackgroundLayer,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppTheme.premiumShadow,
+                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        ),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 28, height: 28,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryIndigo.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Center(child: Text('#${i + 1}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.primaryIndigo))),
                                       ),
-                                      child: Center(child: Text('#${i + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.primaryIndigo))),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(prod.key, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textWhite)),
-                                  ],
-                                ),
-                                Text('₹${prod.value.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.successEmerald)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: barWidth,
-                                minHeight: 4,
-                                backgroundColor: Colors.white.withOpacity(0.05),
-                                color: AppTheme.successEmerald,
+                                      const SizedBox(width: 12),
+                                      Text(prod.key, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textWhite)),
+                                    ],
+                                  ),
+                                  Text('₹${prod.value.toStringAsFixed(0)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: AppTheme.successEmerald)),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: barWidth,
+                                  minHeight: 6,
+                                  backgroundColor: Colors.white.withOpacity(0.05),
+                                  color: AppTheme.successEmerald,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
