@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | ShopKeeper PRO</title>
+    <style>
+        :root {
+            --primary: #5D5FEF;
+            --secondary: #00E5FF;
+            --bg: #0E0F14;
+            --text: #E0E0E0;
+            --text-muted: #94A3B8;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            line-height: 1.8; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            background-color: var(--bg);
+            color: var(--text);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        h1 { 
+            color: var(--secondary); 
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        h2 { 
+            margin-top: 40px; 
+            color: var(--primary); 
+            border-left: 4px solid var(--secondary);
+            padding-left: 15px;
+            font-size: 1.5rem;
+        }
+        .container {
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+        }
+        p, li { color: var(--text-muted); font-size: 1.1rem; }
+        footer { 
+            margin-top: 80px; 
+            text-align: center;
+            font-size: 0.9rem; 
+            color: var(--text-muted); 
+            border-top: 1px solid rgba(255, 255, 255, 0.05); 
+            padding-top: 40px; 
+        }
+        .accent { color: var(--secondary); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Privacy Policy</h1>
+        <p>Effective Date: March 30, 2026</p>
+    </div>
+    
+    <div class="container">
+        <p>Welcome to <span class="accent">ShopKeeper PRO</span>. This Privacy Policy is based on GSD project specifications for the ShopKeeper Retail OS, specifically for Google OAuth compliance.</p>
+        
+        <h2>1. Information We Collect</h2>
+        <p>We collect only necessary information to facilitate retail ERP operations:</p>
+        <ul>
+            <li><span class="accent">Identity:</span> Name, email, and shop profile imagery.</li>
+            <li><span class="accent">Metrics:</span> Sales records, inventory stock levels, and expense transactions.</li>
+            <li><span class="accent">Security:</span> 4-digit PIN hashes and biometric authentication metadata.</li>
+        </ul>
+
+        <h2>2. Data Usage & Cloud Sync</h2>
+        <p>We leverage <span class="accent">Google Firebase</span> (project: shopkeeper-9f594) for real-time cloud synchronization. Your data is used for:</p>
+        <ul>
+            <li>Maintaining account persistence across multiple terminals.</li>
+            <li>Generating AI-driven revenue insights (Profit/Loss).</li>
+            <li>Securing transaction history through Firestore security rules.</li>
+        </ul>
+
+        <h2>3. Transparency</h2>
+        <p>This application follows the Royal Obsidian design system and adheres to the security constraints outlined in the project README. Data is encrypted in transit and at rest using standard Google Cloud protocols.</p>
+
+        <h2>4. Contact</h2>
+        <p>General inquiries regarding data usage can be sent to: <a href="mailto:gundelwaranup119@gmail.com" style="color: var(--secondary); text-decoration: none;">gundelwaranup119@gmail.com</a></p>
+        
+        <footer>
+            <p>ShopKeeper PRO | Production-Ready Retail Solution</p>
+            <p>Powered by Firebase & Flutter</p>
+        </footer>
+    </div>
+</body>
+</html>

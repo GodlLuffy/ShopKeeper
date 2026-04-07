@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopKeeper PRO | Premium Retail OS</title>
+    <style>
+        :root {
+            --primary: #5D5FEF;
+            --secondary: #00E5FF;
+            --bg: #0E0F14;
+            --text: #E0E0E0;
+            --text-muted: #94A3B8;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+        .background-blob {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(93, 95, 239, 0.15) 0%, rgba(14, 15, 20, 0) 70%);
+            z-index: -1;
+            filter: blur(80px);
+            animation: pulse 10s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 0.5; }
+            to { transform: scale(1.2); opacity: 0.8; }
+        }
+        .container {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4rem;
+            border-radius: 3rem;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+            max-width: 650px;
+            position: relative;
+        }
+        .logo-ring {
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--secondary);
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--text), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+        p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+        .links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 2rem;
+        }
+        a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        a:hover {
+            color: white;
+            text-shadow: 0 0 10px var(--secondary);
+        }
+        .btn {
+            background: linear-gradient(135deg, var(--primary), #4648c6);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 20px 40px -10px rgba(93, 95, 239, 0.4);
+            display: inline-block;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-blob"></div>
+    <div class="container">
+        <div class="logo-ring">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary)">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </div>
+        <h1>ShopKeeper PRO</h1>
+        <p>A Premium, FinTech-Grade Retail Operating System for Modern Commerce.</p>
+        <a href="#" class="btn">Coming Soon to Desktop & Mobile</a>
+        <div class="links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="mailto:gundelwaranup119@gmail.com">Contact Support</a>
+        </div>
+    </div>
+</body>
+</html>
